@@ -1,0 +1,60 @@
+<%
+    from Bio import SeqIO
+    import core_funcs
+%> 
+
+<!--generated with beastgen.py-->
+<!-- this is new so it's all very exciting-->
+
+<beast>
+<%
+names = []
+sequences = {}
+aln = SeqIO.parse(fasta, 'fasta')
+for seq in aln:
+    names.append(seq.id)
+    sequences[seq.id] = seq.seq
+    aln_len = len(seq.seq)
+number_seqs = len(names)
+%>
+
+    <!-- The list of taxa to be analysed (can also include dates/ages).          -->
+    <!-- ntax=${number_seqs}                                             -->
+    <taxa id="taxa">
+% for sequence in names: 
+        <taxon id="${sequence}">
+            <date="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+%for trait in traits:
+            <attr name="${trait}">
+                ${sequence.split("|")[trait_locs[trait]]}
+            </attr>
+        </taxon>
+%endfor
+%endfor 
+    </taxa> 
+
+
+    <!-- sequence alignment -->
+    <!-- ntax=${number_seqs} nchar=${aln_len} -->
+    <alignment id="alignment" dataType="nucleotide">
+% for name, seq in sequences.items():
+        <sequence>
+            <taxon idref="${name}"/>
+            ${seq}
+        </sequence>
+%endfor
+    </alignment>
+%if not codon_partitioning:
+    <!-- Unique patterns from 1 to end -->
+    <patterns id="patterns" from="1" strip="false">
+        <alignment idref="alignment"/>
+    </patterns>
+#sort out what will happen if there are codon partitions?
+%endif
+	<!-- This is a simple constant population size coalescent model              -->
+	<!-- that is used to generate an initial tree for the chain.                 -->
+	<constantSize id="initialDemo" units="years">
+		<populationSize>
+			<parameter id="initialDemo.popSize" value="0.5"/>
+		</populationSize>
+	</constantSize>

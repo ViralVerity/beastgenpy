@@ -1,0 +1,62 @@
+<%
+    from Bio import SeqIO
+    import core_funcs
+%> 
+<!--generated with beastgen.py-->
+<!-- this is new so it's all very exciting-->
+
+<beast>
+<%
+names = []
+sequences = {}
+aln = SeqIO.parse(fasta, 'fasta')
+for seq in aln:
+    names.append(seq.id)
+    sequences[seq.id] = seq.seq
+    aln_len = len(seq.seq)
+number_seqs = len(names)
+%>
+   <!-- The list of taxa to be analysed (can also include dates/ages).          -->
+    <!-- ntax=${number_seqs}                                             -->
+    <taxa id="taxa">
+% for sequence in names: 
+        <taxon id="${sequence}">
+            <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+%for trait in traits:
+%if trait_dict:
+            <attr name="${trait}">
+                ${trait_dict[sequence][trait_locs[trait]]}
+            </attr>
+%elif trait_locs:
+            <attr name="${trait}">
+                ${sequence.split("|")[trait_locs[trait]]}
+            </attr>
+%endif%
+%endfor
+        </taxon>
+%endfor 
+    </taxa> 
+
+     <!-- Unique patterns from 1 to end -->
+    <patterns id="patterns" from="1" strip="false">
+        <alignment idref="alignment"/>
+    </patterns>
+
+    <newick id="${tree_name}">
+    ${tree}
+    </newick>
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
