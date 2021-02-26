@@ -78,7 +78,7 @@ n = len(all_trait_options[trait])
 	</strictClockBranchRates>
 	
 	<rateStatistic id="${trait}.meanRate" name="${trait}.meanRate" mode="mean" internal="true" external="true">
-		<treeModel idref="treeModel"/>
+		<treeModel idref="treeModel_${tree_name}"/>
 		<strictClockBranchRates idref="${trait}.branchRates"/>
 	</rateStatistic>
 
@@ -123,7 +123,7 @@ n = len(all_trait_options[trait])
 
 	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
 		<attributePatterns idref="${trait}.pattern"/>
-		<treeModel idref="treeModel"/>
+		<treeModel idref="treeModel_${tree_name}"/>
 		<siteModel idref="${trait}.siteModel"/>
 		<generalSubstitutionModel idref="${trait}.model"/>
 		<generalSubstitutionModel idref="${trait}.model"/>
@@ -162,6 +162,77 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
         </rewards>
     </markovJumpsTreeLikelihood>
 %endfor%
+
+	<!-- Define operators                                                        --> 
+    <operators id="operators" optimizationSchedule="log">
+
+%for trait in traits:
+        <scaleOperator scaleFactor="0.75" weight="15" scaleAllIndependently="true">
+			<parameter idref="${trait}.rates"/>
+		</scaleOperator>
+		<bitFlipOperator weight="7">
+			<parameter idref="${trait}.indicators"/>
+		</bitFlipOperator>
+		<deltaExchange delta="0.75" weight="1">
+			<parameter idref="${trait}.root.frequencies"/>
+		</deltaExchange>
+
+        <scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="${trait}.clock.rate"/>
+		</scaleOperator>
+		
+        <!-- not sure this operator is legit when you have a fixed tree -->
+        <!-- <upDownOperator scaleFactor="0.75" weight="3">
+			<up>
+				<parameter idref="treeModel_${tree_name}.allInternalNodeHeights"/>
+			</up>
+			<down>
+				<parameter idref="${trait}.clock.rate"/>
+			</down>
+		</upDownOperator> -->
+
+%endfor%
+        </operators>
+    
+    <mcmc id="mcmc" chainLength="${chain_length}" autoOptimize="true">
+		<joint id="joint">
+			<prior id="prior">
+
+%for trait in traits:
+                <poissonPrior mean="51.0" offset="0.0">
+					<statistic idref="${trait}.nonZeroRates"/>
+				</poissonPrior>
+				<uniformPrior lower="0.0" upper="1.0">
+					<parameter idref="${trait}.frequencies"/>
+				</uniformPrior>
+				<cachedPrior>
+					<gammaPrior shape="1.0" scale="1.0" offset="0.0">
+						<parameter idref="${trait}.rates"/>
+					</gammaPrior>
+					<parameter idref="${trait}.rates"/>
+				</cachedPrior>
+				<uniformPrior lower="0.0" upper="1.0">
+					<parameter idref="${trait}.root.frequencies"/>
+				</uniformPrior>
+
+				<!-- I think take this out when we add the GLM stuff in -->
+                <strictClockBranchRates idref="${trait}.branchRates"/>
+                <!-- this will change to glmSubstitutionModel-->
+                <generalSubstitutionModel idref="${trait}.model"/>
+%endfor%
+            </prior>
+			<likelihood id="likelihood">
+
+				<!-- START Discrete Traits Model                                             -->
+%for trait in traits%
+				<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+$endfor
+				<!-- END Discrete Traits Model                                               -->
+
+			</likelihood>
+		</joint>
+
+
 
 
 
