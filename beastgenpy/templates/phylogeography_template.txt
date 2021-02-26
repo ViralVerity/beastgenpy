@@ -57,7 +57,7 @@ n = len(all_trait_options[trait])
     <!-- Number Of States = ${n}                                                  -->
 %for option in all_trait_options[trait]:
         <state code="${option}"/>
-%endfor%
+%endfor
     <!-- this is where the alias and ambiguity codes come in-->
     </generalDataType>
 
@@ -161,7 +161,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 %endfor%
         </rewards>
     </markovJumpsTreeLikelihood>
-%endfor%
+%endfor
 
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
@@ -191,7 +191,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 			</down>
 		</upDownOperator> -->
 
-%endfor%
+%endfor
         </operators>
     
     <mcmc id="mcmc" chainLength="${chain_length}" autoOptimize="true">
@@ -219,18 +219,122 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
                 <strictClockBranchRates idref="${trait}.branchRates"/>
                 <!-- this will change to glmSubstitutionModel-->
                 <generalSubstitutionModel idref="${trait}.model"/>
-%endfor%
+%endfor
             </prior>
 			<likelihood id="likelihood">
 
 				<!-- START Discrete Traits Model                                             -->
-%for trait in traits%
+%for trait in traits:
 				<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
-$endfor
+%endfor
 				<!-- END Discrete Traits Model                                               -->
 
 			</likelihood>
 		</joint>
+        <operators idref="operators"/>
+
+    <!-- write log to screen                                                     -->
+		<log id="screenLog" logEvery="10000">
+			<column label="Joint" dp="4" width="12">
+				<joint idref="joint"/>
+			</column>
+			<column label="Prior" dp="4" width="12">
+				<prior idref="prior"/>
+			</column>
+			<column label="Likelihood" dp="4" width="12">
+				<likelihood idref="likelihood"/>
+			</column>
+%for trait in traits:
+			<column label="${trait}.clock.rate" sf="6" width="12">
+				<parameter idref="${trait}.clock.rate"/>
+			</column>
+
+			<!-- START Discrete Traits Model                                             -->
+			<column label="${trait}.nonZeroRates" dp="0" width="6">
+				<sumStatistic idref="${trait}.nonZeroRates"/>
+			</column>
+%endfor
+
+			<!-- END Discrete Traits Model                                               -->
+
+		</log>
+
+		<!-- write log to file                                                       -->
+		<log id="fileLog" logEvery="${log_every}" fileName="${file_stem}.log" overwrite="false">
+			<joint idref="joint"/>
+			<prior idref="prior"/>
+			<likelihood idref="likelihood"/>
+			<parameter idref="treeModel.rootHeight"/>
+			<tmrcaStatistic idref="age(root)"/>
+			<treeLengthStatistic idref="treeLength"/>
+			
+%for trait in traits:
+			<rateStatistic idref="${trait}.meanRate"/>
+
+			<!-- START Discrete Traits Model                                             -->
+			<parameter idref="${trait}.rates"/>
+			<parameter idref="${trait}.indicators"/>
+			<sumStatistic idref="${trait}.nonZeroRates"/>
+
+			<!-- END Discrete Traits Model                                               -->
+
+			<strictClockBranchRates idref="${trait}.branchRates"/>
+			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+            <parameter idref="${trait}.count"/>
+%endfor
+		</log>
+
+%for trait in traits:
+		<!-- START Discrete Traits Model                                             -->
+		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="{log_every" fileName="{file_stem}.${trait}.rates.log">
+			<parameter idref="${trait}.rates"/>
+			<parameter idref="${trait}.indicators"/>
+			<sumStatistic idref="${trait}.nonZeroRates"/>
+		</log>
+%endfor
+		<!-- END Discrete Traits Model                                               -->
+
+
+		<!-- write tree log to file                                                  -->
+		<logTree id="treeFileLog" logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.trees" sortTranslationTable="true">
+			<treeModel idref="treeModel_${tree_name}"/>
+            <joint idref="joint"/>
+			
+%for trait in traits:
+			<trait name="rate" tag="${trait}.rate">
+				<strictClockBranchRates idref="${trait}.branchRates"/>
+			</trait>
+
+			<!-- START Ancestral state reconstruction                                    -->
+			<trait name="${trait}.states" tag="${trait}">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
+			</trait>
+			<trait name="${trait}.count" tag="${trait}.count">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
+			</trait>
+%endfor
+		</logTree>
+
+
+		<!-- write complete history tree log to file                                 -->
+		<logTree logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.history.trees" sortTranslationTable="true">
+			<treeModel idref="treeModel"/>
+%for trait in traits:
+            <markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%endfor
+		</logTree>
+
+		<!-- END Ancestral state reconstruction                                      -->
+
+	</mcmc>
+	
+	<report>
+		<property name="timer">
+			<mcmc idref="mcmc"/>
+		</property>
+	</report>
+	
+</beast>
 
 
 

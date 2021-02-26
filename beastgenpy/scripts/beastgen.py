@@ -15,6 +15,9 @@ parser.add_argument("--traits")
 #parser.add_argument("--codon-partitioning", dest="codon_partitioning")
 parser.add_argument("--trait-file", dest="trait_file")
 parser.add_argument("--fixed-tree-file", dest="fixed_tree_file") #will need to make this a dir to deal with multi trees
+parser.add_argument("--chainlen", default="100000000")
+parser.add_argument("--log", default="10000")
+parser.add_argument("--file-stem", dest="file_stem")
 
 args = parser.parse_args()
 
@@ -25,6 +28,9 @@ traits = args.traits
 trait_file = args.trait_file
 # codon_partitioning = args.codon_partitioning
 fixed_tree_file = args.fixed_tree_file
+chain_length = args.chainlen
+log_every = args.log
+file_stem = args.file_stem
 
 
 #######DISCRETE TRAITS#########
@@ -59,6 +65,6 @@ tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
 
 mytemplate = Template(filename='/Users/s1743989/Documents/GitHub/beastgenpy/beastgenpy/templates/phylogeography_template.txt', strict_undefined=True)
 f = open("test.xml", 'w')
-f.write(mytemplate.render(fasta=fasta_file, tree=fixed_tree, tree_name=tree_name, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options))
+f.write(mytemplate.render(fasta=fasta_file, tree=fixed_tree, tree_name=tree_name, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
 f.close()
 
