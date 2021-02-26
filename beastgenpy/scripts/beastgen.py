@@ -30,6 +30,7 @@ fixed_tree_file = args.fixed_tree_file
 #######DISCRETE TRAITS#########
 new_traits = []
 trait_locs = {}
+all_trait_options = defaultdict(set)
 if traits:
     new_traits = traits.split(",")
     for number, trait in enumerate(new_traits):
@@ -43,6 +44,7 @@ if traits:
                 name = line["sequence_name"]
                 for trait in new_traits:
                     trait_dict[name].append(line[trait])
+                    all_trait_options[trait].add(line[trait])
 #################################
 
 ###########FIXED TREE###############
@@ -57,6 +59,6 @@ tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
 
 mytemplate = Template(filename='/Users/s1743989/Documents/GitHub/beastgenpy/beastgenpy/templates/phylogeography_template.txt', strict_undefined=True)
 f = open("test.xml", 'w')
-f.write(mytemplate.render(fasta=fasta_file, tree=fixed_tree, tree_name=tree_name, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs))
+f.write(mytemplate.render(fasta=fasta_file, tree=fixed_tree, tree_name=tree_name, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options))
 f.close()
 

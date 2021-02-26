@@ -37,18 +37,141 @@ number_seqs = len(names)
 %endfor 
     </taxa> 
 
-     <!-- Unique patterns from 1 to end -->
-    <patterns id="patterns" from="1" strip="false">
-        <alignment idref="alignment"/>
-    </patterns>
 
     <newick id="${tree_name}">
     ${tree}
     </newick>
 
+    <!-- possibly tree model here - for now we dont need it, but if we do: -->
+    <bigFastTreeModel id="treeModel_${tree_name}">
+		<tree idref="${tree_name}"/>
+	</bigFastTreeModel>
+
+%for trait in traits:
+<%  
+n = len(all_trait_options[trait])
+%>
+<!-- general data type for discrete trait model, "${trait}"                  -->
+    <generalDataType id="${trait}.dataType">
+
+    <!-- Number Of States = ${n}                                                  -->
+%for option in all_trait_options[trait]:
+        <state code="${option}"/>
+%endfor%
+    <!-- this is where the alias and ambiguity codes come in-->
+    </generalDataType>
+
+    <!-- Data pattern for discrete trait, "${trait}"                             -->
+	<attributePatterns id="${trait}.pattern" attribute="${trait}">
+		<taxa idref="taxa"/>
+		<generalDataType idref="${trait}.dataType"/>
+	</attributePatterns>
+
+	<!-- END Discrete Traits Model                                               -->
+    <!-- this is where Gytis puts all of the GLM stuff - predictor matrices, random effect matrices-->
+
+    <!-- The strict clock (Uniform rates across branches) for ${trait} rates           -->
+	<strictClockBranchRates id="${trait}.branchRates">
+		<rate>
+			<parameter id="${trait}.clock.rate" value="1.0" lower="0.0"/>
+		</rate>
+	</strictClockBranchRates>
+	
+	<rateStatistic id="${trait}.meanRate" name="${trait}.meanRate" mode="mean" internal="true" external="true">
+		<treeModel idref="treeModel"/>
+		<strictClockBranchRates idref="${trait}.branchRates"/>
+	</rateStatistic>
+
+    <!-- START Discrete Traits Model                                             -->
+
+	<!-- asymmetric CTMC model for discrete state reconstructions                -->
+	<generalSubstitutionModel id="${trait}.model" randomizeIndicator="false">
+		<generalDataType idref="${trait}.dataType"/>
+		<frequencies>
+			<frequencyModel id="${trait}.frequencyModel" normalize="true">
+				<generalDataType idref="${trait}.dataType"/>
+				<frequencies>
+					<parameter id="${trait}.frequencies" dimension="${n}"/>
+				</frequencies>
+			</frequencyModel>
+		</frequencies>
+
+		<!-- rates and indicators                                                    -->
+		<rates>
+			<parameter id="${trait}.rates" dimension="${n**2 - n}" value="1.0" lower="0.0"/>
+		</rates>
+		<rateIndicator>
+			<parameter id="${trait}.indicators" dimension="${n**2 - n}" value="1.0"/>
+		</rateIndicator>
+        
+    </generalSubstitutionModel>
+
+    <sumStatistic id="${trait}.nonZeroRates" elementwise="true">
+        <parameter idref="${trait}.indicators"/>
+    </sumStatistic>
+    <productStatistic id="${trait}.actualRates" elementwise="false">
+        <parameter idref="${trait}.indicators"/>
+        <parameter idref="${trait}.rates"/>
+    </productStatistic>
+    <siteModel id="${trait}.siteModel">
+        <substitutionModel>
+            <generalSubstitutionModel idref="${trait}.model"/>
+        </substitutionModel>
+    </siteModel>
+	
+	
+
+	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
+		<attributePatterns idref="${trait}.pattern"/>
+		<treeModel idref="treeModel"/>
+		<siteModel idref="${trait}.siteModel"/>
+		<generalSubstitutionModel idref="${trait}.model"/>
+		<generalSubstitutionModel idref="${trait}.model"/>
+		<strictClockBranchRates idref="${trait}.branchRates"/>
+
+		<!-- The root state frequencies                                              -->
+		<frequencyModel id="${trait}.root.frequencyModel" normalize="true">
+			<generalDataType idref="${trait}.dataType"/>
+			<frequencies>
+				<parameter id="${trait}.root.frequencies" dimension="${n}"/>
+			</frequencies>
+		</frequencyModel>
+
+        <!-- Ancestral state reconstruction -->
+<% 
+len_1s = n-2
+all_count_lst = [0.0]
+for i in range(len_1s):
+    all_count_lst.append(1.0)
+all_count_lst.append(0.0)
+all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
+%>       
+        <parameter id="${trait}.count" value="${all_count_string}"/>
+
+        <rewards>
+%for place,option in enumerate(all_trait_options[trait]):
+<% reward_trait_list = []
+for i in range(n):
+    if i != place:
+        reward_trait_list.append(0.0)
+    else:
+        reward_trait_list.append(1.0)
+reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
+            <parameter id="${option}"       value="${reward_trait_str}"/>
+%endfor%
+        </rewards>
+    </markovJumpsTreeLikelihood>
+%endfor%
+
+
+
+	 
+
+
 
 
         
+
 
 
 
