@@ -139,7 +139,7 @@ n = len(all_trait_options[trait])
 
         <!-- Ancestral state reconstruction -->
 <% 
-len_1s = n-2
+len_1s = (n**2)-2
 all_count_lst = [0.0]
 for i in range(len_1s):
     all_count_lst.append(1.0)
@@ -264,9 +264,6 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 			<joint idref="joint"/>
 			<prior idref="prior"/>
 			<likelihood idref="likelihood"/>
-			<parameter idref="treeModel.rootHeight"/>
-			<tmrcaStatistic idref="age(root)"/>
-			<treeLengthStatistic idref="treeLength"/>
 			
 %for trait in traits:
 			<rateStatistic idref="${trait}.meanRate"/>
@@ -286,7 +283,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 
 %for trait in traits:
 		<!-- START Discrete Traits Model                                             -->
-		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="{log_every" fileName="{file_stem}.${trait}.rates.log">
+		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="${log_every}" fileName="${file_stem}.${trait}.rates.log">
 			<parameter idref="${trait}.rates"/>
 			<parameter idref="${trait}.indicators"/>
 			<sumStatistic idref="${trait}.nonZeroRates"/>
@@ -318,7 +315,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 
 		<!-- write complete history tree log to file                                 -->
 		<logTree logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.history.trees" sortTranslationTable="true">
-			<treeModel idref="treeModel"/>
+			<treeModel idref="treeModel_${tree_name}"/>
 %for trait in traits:
             <markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
 %endfor
