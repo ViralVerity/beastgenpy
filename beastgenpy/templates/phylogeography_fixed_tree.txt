@@ -1,25 +1,15 @@
 <%
-    from Bio import SeqIO
     import core_funcs
 %> 
 <!--generated with beastgen.py-->
 <!-- this is new so it's all very exciting-->
 
 <beast>
-<%
-names = []
-sequences = {}
-aln = SeqIO.parse(fasta, 'fasta')
-for seq in aln:
-    names.append(seq.id)
-    sequences[seq.id] = seq.seq
-    aln_len = len(seq.seq)
-number_seqs = len(names)
-%>
+
    <!-- The list of taxa to be analysed (can also include dates/ages).          -->
-    <!-- ntax=${number_seqs}                                             -->
+    <!-- ntax=${len(id_list)}                                             -->
     <taxa id="taxa">
-% for sequence in names: 
+% for sequence in id_list: 
         <taxon id="${sequence}">
             <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
 %for trait in traits:
@@ -36,7 +26,6 @@ number_seqs = len(names)
         </taxon>
 %endfor 
     </taxa> 
-
 
     <newick id="${tree_name}">
     ${tree}
@@ -157,7 +146,7 @@ for i in range(n):
     else:
         reward_trait_list.append(1.0)
 reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
-            <parameter id="${option}"       value="${reward_trait_str}"/>
+            <parameter id="${option}_R"       value="${reward_trait_str}"/>
 %endfor%
         </rewards>
     </markovJumpsTreeLikelihood>
@@ -199,7 +188,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 			<prior id="prior">
 
 %for trait in traits:
-                <poissonPrior mean="51.0" offset="0.0">
+                <poissonPrior mean="${n-1}" offset="0.0">
 					<statistic idref="${trait}.nonZeroRates"/>
 				</poissonPrior>
 				<uniformPrior lower="0.0" upper="1.0">
@@ -277,7 +266,6 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 
 			<strictClockBranchRates idref="${trait}.branchRates"/>
 			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
-            <parameter idref="${trait}.count"/>
 %endfor
 		</log>
 
