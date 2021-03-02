@@ -86,15 +86,15 @@ if fixed_tree_dir:
             with open(os.path.join(fixed_tree_dir,f)) as open_f:
                 for l in open_f:
                     fixed_tree = l.strip("\n").lstrip("[&R] ")
-                tree_name = open_f.split("/")[-1].split(".")[0]
-                tree_dict[tree_name]
+                tree_name = f.split("/")[-1].split(".")[0]
+                tree_dict[tree_name] = fixed_tree
 
 
 ################################
 
 
 mytemplate = Template(filename=template, strict_undefined=True)
-f = open("test.xml", 'w')
+f = open(f"{file_stem}.xml", 'w')
 f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
 f.close()
 

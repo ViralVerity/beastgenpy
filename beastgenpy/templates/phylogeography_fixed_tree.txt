@@ -115,7 +115,6 @@ n = len(all_trait_options[trait])
 		<treeModel idref="treeModel_${tree_name}"/>
 		<siteModel idref="${trait}.siteModel"/>
 		<generalSubstitutionModel idref="${trait}.model"/>
-		<generalSubstitutionModel idref="${trait}.model"/>
 		<strictClockBranchRates idref="${trait}.branchRates"/>
 
 		<!-- The root state frequencies                                              -->
@@ -203,6 +202,12 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 				<uniformPrior lower="0.0" upper="1.0">
 					<parameter idref="${trait}.root.frequencies"/>
 				</uniformPrior>
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="${trait}.clock.rate"/>
+					</ctmcScale>
+					<treeModel idref="treeModel_${tree_name}"/>
+				</ctmcScalePrior>
 
 				<!-- I think take this out when we add the GLM stuff in -->
                 <strictClockBranchRates idref="${trait}.branchRates"/>
@@ -266,6 +271,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 
 			<strictClockBranchRates idref="${trait}.branchRates"/>
 			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+			<parameter idref="${trait}.clock.rate"/>
 %endfor
 		</log>
 
