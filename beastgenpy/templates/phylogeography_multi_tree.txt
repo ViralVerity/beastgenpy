@@ -1,0 +1,342 @@
+<%
+	    import core_funcs
+%> 
+<!--generated with beastgen.py-->
+
+<beast>
+   <!-- The list of taxa to be analysed (can also include dates/ages).          -->
+    <!-- ntax=${len(id_list)}                                             -->
+    <taxa id="taxa">
+% for sequence in id_list: 
+        <taxon id="${sequence}">
+            <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+%for trait in traits:
+%if trait_dict:
+            <attr name="${trait}">
+                ${trait_dict[sequence][trait_locs[trait]]}
+            </attr>
+%elif trait_locs:
+            <attr name="${trait}">
+                ${sequence.split("|")[trait_locs[trait]]}
+            </attr>
+%endif%
+%endfor
+        </taxon>
+%endfor 
+    </taxa> 
+
+%for tree_name, newick_string in tree_dict.items():
+    <newick id="${tree_name}">
+    ${newick_string}
+    </newick>
+
+    <!-- possibly tree model here - for now we dont need it, but if we do: -->
+    <bigFastTreeModel id="treeModel_${tree_name}">
+		<tree idref="${tree_name}"/>
+	</bigFastTreeModel>
+
+%endfor
+%for trait in traits:
+<%  
+n = len(all_trait_options[trait])
+%>
+<!-- general data type for discrete trait model, "${trait}"                  -->
+    <generalDataType id="${trait}.dataType">
+
+    <!-- Number Of States = ${n}                                                  -->
+%for option in all_trait_options[trait]:
+        <state code="${option}"/>
+%endfor
+    <!-- this is where the alias and ambiguity codes come in-->
+    </generalDataType>
+
+    <!-- Data pattern for discrete trait, "${trait}"                             -->
+	<attributePatterns id="${trait}.pattern" attribute="${trait}">
+		<taxa idref="taxa"/>
+		<generalDataType idref="${trait}.dataType"/>
+	</attributePatterns>
+
+	<!-- END Discrete Traits Model                                               -->
+    <!-- this is where Gytis puts all of the GLM stuff - predictor matrices, random effect matrices-->
+
+    <!-- The strict clock (Uniform rates across branches) for ${trait} rates           -->
+	<strictClockBranchRates id="${trait}.branchRates">
+		<rate>
+			<parameter id="${trait}.clock.rate" value="1.0" lower="0.0"/>
+		</rate>
+	</strictClockBranchRates>
+
+%for tree_name in tree_dict.keys():
+	<rateStatistic id="${trait}_${tree_name}.meanRate" name="${trait}_${tree_name}.meanRate" mode="mean" internal="true" external="true">
+		<treeModel idref="treeModel_${tree_name}"/>
+		<strictClockBranchRates idref="${trait}.branchRates"/>
+	</rateStatistic>
+%endfor
+    <!-- START Discrete Traits Model                                             -->
+
+	<!-- asymmetric CTMC model for discrete state reconstructions                -->
+	<generalSubstitutionModel id="${trait}.model" randomizeIndicator="false">
+		<generalDataType idref="${trait}.dataType"/>
+		<frequencies>
+			<frequencyModel id="${trait}.frequencyModel" normalize="true">
+				<generalDataType idref="${trait}.dataType"/>
+				<frequencies>
+					<parameter id="${trait}.frequencies" dimension="${n}"/>
+				</frequencies>
+			</frequencyModel>
+		</frequencies>
+
+		<!-- rates and indicators                                                    -->
+		<rates>
+			<parameter id="${trait}.rates" dimension="${n**2 - n}" value="1.0" lower="0.0"/>
+		</rates>
+		<rateIndicator>
+			<parameter id="${trait}.indicators" dimension="${n**2 - n}" value="1.0"/>
+		</rateIndicator>
+        
+    </generalSubstitutionModel>
+
+    <sumStatistic id="${trait}.nonZeroRates" elementwise="true">
+        <parameter idref="${trait}.indicators"/>
+    </sumStatistic>
+    <productStatistic id="${trait}.actualRates" elementwise="false">
+        <parameter idref="${trait}.indicators"/>
+        <parameter idref="${trait}.rates"/>
+    </productStatistic>
+    <siteModel id="${trait}.siteModel">
+        <substitutionModel>
+            <generalSubstitutionModel idref="${trait}.model"/>
+        </substitutionModel>
+    </siteModel>
+	
+	
+%for tree_name in tree_dict.keys():
+	<markovJumpsTreeLikelihood id="${trait}_${tree_name}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
+		<attributePatterns idref="${trait}.pattern"/>
+		<treeModel idref="treeModel_${tree_name}"/>
+		<siteModel idref="${trait}.siteModel"/>
+		<generalSubstitutionModel idref="${trait}.model"/>
+		<strictClockBranchRates idref="${trait}.branchRates"/>
+
+		<!-- The root state frequencies                                              -->
+		<frequencyModel id="${trait}_${tree_name}.root.frequencyModel" normalize="true">
+			<generalDataType idref="${trait}.dataType"/>
+			<frequencies>
+				<parameter id="${trait}_${tree_name}.root.frequencies" dimension="${n}"/>
+			</frequencies>
+		</frequencyModel>
+
+        <!-- Ancestral state reconstruction -->
+<% 
+len_1s = (n**2)-2
+all_count_lst = [0.0]
+for i in range(len_1s):
+    all_count_lst.append(1.0)
+all_count_lst.append(0.0)
+all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
+%>       
+        <parameter id="${trait}_${tree_name}.count" value="${all_count_string}"/>
+
+        <rewards>
+%for place,option in enumerate(all_trait_options[trait]): #this might need to be per tree - not sure how it will cope with rewards for locs not in that tree
+<% reward_trait_list = []
+for i in range(n):
+    if i != place:
+        reward_trait_list.append(0.0)
+    else:
+        reward_trait_list.append(1.0)
+reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
+            <parameter id="${option}_${tree_name}"       value="${reward_trait_str}"/>
+%endfor
+        </rewards>
+    </markovJumpsTreeLikelihood>
+%endfor
+%endfor
+
+	<!-- Define operators                                                        --> 
+    <operators id="operators" optimizationSchedule="log">
+
+%for trait in traits:
+        <scaleOperator scaleFactor="0.75" weight="15" scaleAllIndependently="true">
+			<parameter idref="${trait}.rates"/>
+		</scaleOperator>
+		<bitFlipOperator weight="7">
+			<parameter idref="${trait}.indicators"/>
+		</bitFlipOperator>
+%for tree_name in tree_dict.keys():
+		<deltaExchange delta="0.75" weight="1">
+			<parameter idref="${trait}_${tree_name}.root.frequencies"/>
+		</deltaExchange>
+%endfor
+        <scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="${trait}.clock.rate"/>
+		</scaleOperator>
+
+%endfor
+        </operators>
+    
+    <mcmc id="mcmc" chainLength="${chain_length}" autoOptimize="true">
+		<joint id="joint">
+			<prior id="prior">
+
+%for trait in traits:
+                <poissonPrior mean="${n-1}" offset="0.0">
+					<statistic idref="${trait}.nonZeroRates"/>
+				</poissonPrior>
+				<uniformPrior lower="0.0" upper="1.0">
+					<parameter idref="${trait}.frequencies"/>
+				</uniformPrior>
+				<cachedPrior>
+					<gammaPrior shape="1.0" scale="1.0" offset="0.0">
+						<parameter idref="${trait}.rates"/>
+					</gammaPrior>
+					<parameter idref="${trait}.rates"/>
+				</cachedPrior>
+				
+%for tree_name in tree_dict.keys():
+				<uniformPrior lower="0.0" upper="1.0">
+					<parameter idref="${trait}_${tree_name}.root.frequencies"/>
+				</uniformPrior>
+				<ctmcScalePrior> <!-- not sure how this will work with lots of different trees -->
+					<ctmcScale>
+						<parameter idref="${trait}.clock.rate"/>
+					</ctmcScale>
+					<treeModel idref="treeModel_${tree_name}"/>
+				</ctmcScalePrior>
+%endfor
+
+				<!-- I think take this out when we add the GLM stuff in -->
+                <strictClockBranchRates idref="${trait}.branchRates"/>
+                <!-- this will change to glmSubstitutionModel-->
+                <generalSubstitutionModel idref="${trait}.model"/>
+%endfor
+            </prior>
+			<likelihood id="likelihood">
+
+				<!-- START Discrete Traits Model                                             -->
+%for trait in traits:
+%for tree_name in tree_dict.keys():
+				<markovJumpsTreeLikelihood idref="${trait}_${tree_name}.treeLikelihood"/>
+%endfor
+%endfor
+				<!-- END Discrete Traits Model                                               -->
+
+			</likelihood>
+		</joint>
+        <operators idref="operators"/>
+
+    <!-- write log to screen                                                     -->
+		<log id="screenLog" logEvery="10000">
+			<column label="Joint" dp="4" width="12">
+				<joint idref="joint"/>
+			</column>
+			<column label="Prior" dp="4" width="12">
+				<prior idref="prior"/>
+			</column>
+			<column label="Likelihood" dp="4" width="12">
+				<likelihood idref="likelihood"/>
+			</column>
+%for trait in traits:
+			<column label="${trait}.clock.rate" sf="6" width="12">
+				<parameter idref="${trait}.clock.rate"/>
+			</column>
+
+			<!-- START Discrete Traits Model                                             -->
+			<column label="${trait}.nonZeroRates" dp="0" width="6">
+				<sumStatistic idref="${trait}.nonZeroRates"/>
+			</column>
+%endfor
+
+			<!-- END Discrete Traits Model                                               -->
+
+		</log>
+
+		<!-- write log to file                                                       -->
+		<log id="fileLog" logEvery="${log_every}" fileName="${file_stem}.log" overwrite="false">
+			<joint idref="joint"/>
+			<prior idref="prior"/>
+			<likelihood idref="likelihood"/>
+			
+%for trait in traits:
+%for tree_name in tree_dict.keys():
+			<rateStatistic idref="${trait}_${tree_name}.meanRate"/>
+%endfor
+			<!-- START Discrete Traits Model                                             -->
+			<parameter idref="${trait}.rates"/>
+			<parameter idref="${trait}.indicators"/>
+			<sumStatistic idref="${trait}.nonZeroRates"/>
+
+			<!-- END Discrete Traits Model                                               -->
+
+			<strictClockBranchRates idref="${trait}.branchRates"/>
+%for tree_name in tree_dict.keys():
+			<markovJumpsTreeLikelihood idref="${trait}_${tree_name}.treeLikelihood"/>
+%endfor
+%endfor
+		</log>
+
+%for trait in traits:
+		<!-- START Discrete Traits Model                                             -->
+		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="${log_every}" fileName="${file_stem}.${trait}.rates.log">
+			<parameter idref="${trait}.rates"/>
+			<parameter idref="${trait}.indicators"/>
+			<sumStatistic idref="${trait}.nonZeroRates"/>
+		</log>
+%endfor
+		<!-- END Discrete Traits Model                                               -->
+
+%for tree_name in tree_dict.keys():
+		<!-- write tree log to file                                                  -->
+		<logTree id="treeFileLog_${tree_name}" logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}_${tree_name}.trees" sortTranslationTable="true">
+			<treeModel idref="treeModel_${tree_name}"/>
+            <joint idref="joint"/>
+			
+%for trait in traits:
+			<trait name="rate" tag="${trait}.rate">
+				<strictClockBranchRates idref="${trait}.branchRates"/>
+			</trait>
+
+			<!-- START Ancestral state reconstruction                                    -->
+			<trait name="${trait}.states" tag="${trait}">
+				<ancestralTreeLikelihood idref="${trait}_${tree_name}.treeLikelihood"/>
+			</trait>
+			<trait name="${trait}_${tree_name}.count" tag="${trait}_${tree_name}.count">
+				<ancestralTreeLikelihood idref="${trait}_${tree_name}.treeLikelihood"/>
+			</trait>
+			<parameter idref="${trait}.clock.rate"/>
+%endfor
+		</logTree>
+%endfor
+
+	</mcmc>
+	
+	<report>
+		<property name="timer">
+			<mcmc idref="mcmc"/>
+		</property>
+	</report>
+	
+</beast>
+
+
+
+
+
+	 
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
