@@ -1,0 +1,411 @@
+<%
+    import core_funcs
+%> 
+<!--generated with beastgen.py-->
+<!-- this is new so it's all very exciting-->
+
+<beast>
+
+   <!-- The list of taxa to be analysed (can also include dates/ages).          -->
+    <!-- ntax=${len(id_list)}                                             -->
+    <taxa id="taxa">
+% for sequence in id_list: 
+        <taxon id="${sequence}">
+            <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+%for trait in traits:
+%if trait_dict:
+            <attr name="${trait}">
+                ${trait_dict[sequence][trait_locs[trait]]}
+            </attr>
+%elif trait_locs:
+            <attr name="${trait}">
+                ${sequence.split("|")[trait_locs[trait]]}
+            </attr>
+%endif%
+%endfor
+        </taxon>
+%endfor 
+    </taxa> 
+
+    <newick id="${tree_name}">
+    ${tree}
+    </newick>
+
+    <!-- possibly tree model here - for now we dont need it, but if we do: -->
+    <bigFastTreeModel id="treeModel_${tree_name}">
+		<tree idref="${tree_name}"/>
+	</bigFastTreeModel>
+
+%for trait in traits:
+<%  
+n_options = len(all_trait_options[trait])
+n_predictors = len(trait_to_predictor[trait])
+%>
+<!-- general data type for discrete trait model, "${trait}"                  -->
+    <generalDataType id="${trait}.dataType">
+
+    <!-- Number Of States = ${n_options}                                                  -->
+%for option in all_trait_options[trait]:
+        <state code="${option}"/>
+%endfor
+    <!-- this is where the alias and ambiguity codes come in-->
+    </generalDataType>
+
+    <!-- Data pattern for discrete trait, "${trait}"                             -->
+	<attributePatterns id="${trait}.pattern" attribute="${trait}">
+		<taxa idref="taxa"/>
+		<generalDataType idref="${trait}.dataType"/>
+	</attributePatterns>
+
+	<!-- END Discrete Traits Model                                               -->
+    <!-- Generalised Linear Model-->
+
+	<glmSubstitutionModel id="${trait}.model">
+		<dataType idref="${trait}.dataType"/>
+		<rootFrequencies>
+			<frequencyModel id="${trait}.frequencyModel" normalize="true">
+			<dataType idref="${trait}.dataType"/>
+				<frequencies>
+					<parameter id="${trait}.frequencies" dimension="${n_options}"/>
+				</frequencies>
+			</frequencyModel>
+		</rootFrequencies>
+
+		<glmModel id="${trait}.glmModel" checkFullRank="false" family="logLinear" checkIdentifiability="false">
+			<independentVariables>
+				<parameter id="${trait}.glmCoefficients" dimension="${n_predictors}" value="0.1"/> <!-- dimension is the number of predictors -->
+				<indicator>
+					<parameter id="${trait}.coefIndicator" dimension="${n_predictors}" value="1"/> <!-- dimension is the number of predictors -->
+				</indicator>
+				<designMatrix id="${trait}.designMatrix">
+
+%for predictor, values in trait_to_predictor[${trait}].items():
+					<parameter id="${predictor}" value="${values}" />
+%endfor
+				</designMatrix>
+			</independentVariables>
+			<independentVariables>
+				<parameter id="glmRandCoefficients_${trait}" dimension="${n_options*2}" value="0.1"/> <!-- NB I'm assuming here that it's asymmetric-->
+				<indicator>
+					<parameter id="coefRandIndicator_${trait}" dimension="${n_options*2}" value="1.0"/>
+				</indicator>
+				<designMatrix id="randDesignMatrix_${trait}" checkIdentifiability="false">
+% for to_from, rand_matrix in trait_rand_design.items():
+					<parameter id="${to_from}" value="${rand_matrix}"/>
+%endfor
+				</designMatrix>
+			</independentVariables>
+		</glmModel>
+	</glmSubstitutionModel>
+
+	<sumStatistic id="${trait}.nonZeroIndicators" name="nonZeroIndicatorCount" elementwise="true">
+		<parameter idref="${trait}.coefIndicator"/>
+	</sumStatistic>
+	<productStatistic id="${trait}.coefficientsTimesIndicators" elementwise="false">
+		<parameter idref="${trait}.glmCoefficients"/>
+		<parameter idref="${trait}.coefIndicator"/>
+	</productStatistic>
+
+	<distributionLikelihood id="${trait}_randomEffects.prior">
+		<data>
+			<parameter idref="glmRandCoefficients_${trait}"/>
+		</data>
+	    <distribution>
+    	    <normalDistributionModel>
+				<mean>
+					<parameter id="LNmeanRandEffect_${trait}" value="0.0"/>
+				</mean>
+				<precision>
+					<parameter id="LNprecRandEffect_${trait}" value="0.1"/>
+				</precision>
+	        </normalDistributionModel>
+	    </distribution>
+	</distributionLikelihood>
+
+    <gammaPrior id="gammaPrecisionRandEffectPrior_${trait}" shape="0.001" scale="1000" offset="0">
+        <parameter idref="LNprecRandEffect_${trait}"/>
+    </gammaPrior>
+
+	<sumStatistic id="nonZeroEffects_${trait}" name="nonZeroEffectCount" elementwise="true">
+		<parameter idref="coefRandIndicator_${trait}"/>
+	</sumStatistic>
+
+
+    <!-- The strict clock (Uniform rates across branches) for ${trait} rates           -->
+	<strictClockBranchRates id="${trait}.branchRates">
+		<rate>
+			<parameter id="${trait}.rate" value="1.0" lower="0.0"/>
+		</rate>
+	</strictClockBranchRates>
+
+	<siteModel id="${trait}.siteModel">
+        <substitutionModel>
+            <generalSubstitutionModel idref="${trait}.model"/>
+        </substitutionModel>
+    </siteModel>
+	
+
+	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
+		<attributePatterns idref="${trait}.pattern"/>
+		<treeModel idref="treeModel_${tree_name}"/>
+		<siteModel idref="${trait}.siteModel"/>
+		<generalSubstitutionModel idref="${trait}.model"/>
+		<strictClockBranchRates idref="${trait}.branchRates"/>
+
+		<!-- The root state frequencies                                              -->
+		<frequencyModel id="${trait}.root.frequencyModel" normalize="true">
+			<generalDataType idref="${trait}.dataType"/>
+			<frequencies>
+				<parameter id="${trait}.root.frequencies" dimension="${n}"/>
+			</frequencies>
+		</frequencyModel>
+
+        <!-- Ancestral state reconstruction -->
+<% 
+len_1s = (n**2)-2
+all_count_lst = [0.0]
+for i in range(len_1s):
+    all_count_lst.append(1.0)
+all_count_lst.append(0.0)
+all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
+%>       
+        <parameter id="${trait}.count" value="${all_count_string}"/>
+
+        <rewards>
+%for place,option in enumerate(all_trait_options[trait]):
+<% reward_trait_list = []
+for i in range(n):
+    if i != place:
+        reward_trait_list.append(0.0)
+    else:
+        reward_trait_list.append(1.0)
+reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
+            <parameter id="${option}_R"       value="${reward_trait_str}"/>
+%endfor%
+        </rewards>
+    </markovJumpsTreeLikelihood>
+%endfor
+
+	<!-- Define operators                                                        --> 
+    <operators id="operators" optimizationSchedule="log">
+
+%for trait in traits:
+        <scaleOperator scaleFactor="0.75" weight="15" scaleAllIndependently="true">
+			<parameter idref="${trait}.rate"/>
+		</scaleOperator>
+		<bitFlipOperator weight="7">
+			<parameter idref="${trait}.coefIndicator"/>
+		</bitFlipOperator>
+		<deltaExchange delta="0.75" weight="1">
+			<parameter idref="${trait}.root.frequencies"/>
+		</deltaExchange>
+		<rateBitExchangeOperator weight="3" usesPriorOnSum="false">
+			<bits>
+				<parameter idref="${trait}.coefIndicator"/>
+			</bits>
+			<rates>
+				<parameter idref="${trait}.glmCoefficients"/>
+			</rates>
+		</rateBitExchangeOperator>
+		<bitMoveOperator weight="3.0" numBitsToMove="1" usesPriorOnSum="false">
+ 			<bits>
+   				<parameter idref="${trait}.coefIndicator"/>
+ 			</bits>
+		</bitMoveOperator>  
+		<randomWalkOperator windowSize="0.5" weight="1">
+			<parameter idref="${trait}.glmCoefficients"/>
+		</randomWalkOperator>
+		<mvnOperator scaleFactor="1.0" weight="10" formXtXInverse="true">
+			<parameter idref="${trait}.glmCoefficients"/>
+			<varMatrix>
+				<parameter idref="${trait}.designMatrix"/>
+			</varMatrix>
+		</mvnOperator>
+
+ 		<randomWalkOperator windowSize="0.5" weight="20">
+            <parameter idref="glmRandCoefficients_${trait}"/>
+        </randomWalkOperator>    
+
+		<normalGammaPrecisionGibbsOperator weight="12">
+			<likelihood>
+				<distributionLikelihood idref="${trait}_randomEffects.prior"/>
+			</likelihood>
+			<prior>
+				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
+			</prior>
+		</normalGammaPrecisionGibbsOperator>
+
+%endfor
+        </operators>
+    
+    <mcmc id="mcmc" chainLength="${chain_length}" autoOptimize="true">
+		<joint id="joint">
+			<prior id="prior">
+
+%for trait in traits:
+<% n_predictors = len(trait_to_predictor[trait])%>
+				
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="${trait}.rate"/>
+					</ctmcScale>
+					<treeModel idref="treeModel_${tree_name}"/>
+				</ctmcScalePrior>
+				<normalPrior mean="0" stdev="2">
+					<parameter idref="${trait}.glmCoefficients"/>
+				</normalPrior>
+				<binomialLikelihood>
+					<proportion>
+						<parameter value="${bin_prob}"/> <!-- the value of p that will give a 50% chance of no predictors being included -->
+					</proportion>
+					<trials>
+						<parameter dimension="${n_predictors}" value="1"/> <!-- dimension is the number of predictors -->
+					</trials>
+					<counts>
+						<parameter idref="${trait}.coefIndicator"/>
+					</counts>
+				</binomialLikelihood>
+				<distributionLikelihood idref="${trait}_randomEffects.prior"/>
+				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
+
+                <glmSubstitutionModel idref="${trait}.model"/>
+%endfor
+            </prior>
+			<likelihood id="likelihood">
+
+				<!-- START Discrete Traits Model                                             -->
+%for trait in traits:
+				<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%endfor
+				<!-- END Discrete Traits Model                                               -->
+
+			</likelihood>
+		</joint>
+        <operators idref="operators"/>
+
+    <!-- write log to screen                                                     -->
+		<log id="screenLog" logEvery="10000">
+			<column label="Joint" dp="4" width="12">
+				<joint idref="joint"/>
+			</column>
+			<column label="Prior" dp="4" width="12">
+				<prior idref="prior"/>
+			</column>
+			<column label="Likelihood" dp="4" width="12">
+				<likelihood idref="likelihood"/>
+			</column>
+%for trait in traits:
+			<column label="${trait}.rate" sf="6" width="12">
+				<parameter idref="${trait}.rate"/>
+			</column>
+
+			<!-- START Discrete Traits Model                                             -->
+			<column label="${trait}.nonZeroPredictors" sf="6" width="12">
+				<sumStatistic idref="${trait}.nonZeroIndicators"/>
+			</column>
+%endfor
+
+			<!-- END Discrete Traits Model                                               -->
+
+		</log>
+
+		<!-- write log to file                                                       -->
+		<log id="fileLog" logEvery="${log_every}" fileName="${file_stem}.log" overwrite="false">
+			<joint idref="joint"/>
+			<prior idref="prior"/>
+			<likelihood idref="likelihood"/>
+			
+%for trait in traits:
+			<distributionLikelihood idref="${trait}_randomEffects.prior"/>
+			<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
+
+			<parameter idref="${trait}.rate"/>
+			<parameter idref="${trait}.root.frequencies"/>
+
+			<!-- START Discrete Traits Model                                             -->
+			<sumStatistic idref="${trait}.nonZeroIndicators"/>
+			<parameter idref="${trait}.coefIndicator"/>
+			<parameter idref="${trait}.glmCoefficients"/>
+			<productStatistic idref="${trait}.coefficientsTimesIndicators"/>
+			<parameter idref="LNprecRandEffect_${trait}"/>
+
+			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+			<glmSubstitutionModel idref="${trait}.model"/>
+%endfor
+		</log>
+
+%for trait in traits:
+		<!-- START Discrete Traits Model                                             -->
+		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="${log_every}" fileName="${file_stem}.${trait}.rates.log">
+			<<parameter idref="${trait}.coefIndicator"/>
+			<parameter idref="${trait}.glmCoefficients"/>
+			<productStatistic idref="${trait}.coefficientsTimesIndicators"/>
+			<parameter idref="coefRandIndicator_${trait}"/>
+			<parameter idref="glmRandCoefficients_${trait}"/>
+			<glmModel idref="${trait}.glmModel"/>
+			<sumStatistic idref="${trait}.nonZeroIndicators"/>
+			<parameter idref="LNprecRandEffect_${trait}"/>
+		</log>
+%endfor
+		<!-- END Discrete Traits Model                                               -->
+
+
+		<!-- write tree log to file                                                  -->
+		<logTree id="treeFileLog" logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.trees" sortTranslationTable="true">
+			<treeModel idref="treeModel_${tree_name}"/>
+            <joint idref="joint"/>
+			
+%for trait in traits:
+			<!-- START Ancestral state reconstruction                                    -->
+			<trait name="${trait}.states" tag="${trait}">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
+			</trait>
+			<trait name="${trait}.count" tag="${trait}.count">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
+			</trait>
+%endfor
+		</logTree>
+
+
+		<!-- write complete history tree log to file                                 -->
+		<logTree logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.history.trees" sortTranslationTable="true">
+			<treeModel idref="treeModel_${tree_name}"/>
+%for trait in traits:
+            <markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%endfor
+		</logTree>
+
+		<!-- END Ancestral state reconstruction                                      -->
+
+	</mcmc>
+	
+	<report>
+		<property name="timer">
+			<mcmc idref="mcmc"/>
+		</property>
+	</report>
+	
+</beast>
+
+
+
+
+
+	 
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
