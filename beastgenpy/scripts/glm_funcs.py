@@ -19,7 +19,7 @@ def make_vector(matrix, dim):
 
     vector = above_diag + below_diag #make one vector that is the top triangle read horizontally, and lower triangle read vertically
     vector = vector.replace("]["," ").replace("[","").replace("]","")
-    
+
     return vector
 
 def process_directional_predictors(trait_name, predictor_file):
@@ -70,6 +70,40 @@ def process_directional_predictors(trait_name, predictor_file):
 
     return predictor_dict
 
+def process_oneway_predictors(trait_name, trait_options, predictor_file):
+           
+    option_list = sorted(trait_options)
+    dim = len(option_list)
+    option_position = {}
+    option_tups = []
+    
+    for i,option in enumerate(option_list):
+        option_position[option] = i
+        for option2 in option_list:
+            option_tups.append((option, option2))
+
+    tup_dict = {}
+    for tup in option_tups:
+        tup_dict[tup] = ""
+
+    with open(predictor_file) as f:
+        data = csv.DictReader(f)
+        for l in data:
+            first_ele = l[trait_name]
+            for option in option_list:
+                key = (first_ele, option)
+                tup_dict[key] = l[option]
+    
+    matrix = np.zeros((dim, dim)) 
+    for tup, value in tup_dict.items():
+        location_1 = option_position[tup[0]]
+        location_2 = option_position[tup[1]]
+
+        matrix[location_1, location_2] = value
+
+    vector = make_vector(matrix, dim)
+    
+    return vector
 
 
 def make_twoway_REmatrices(trait_options_dict):

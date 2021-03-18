@@ -20,6 +20,7 @@ parser.add_argument("--trait-file", dest="trait_file")
 parser.add_argument("--fixed-tree-file", dest="fixed_tree_file") 
 parser.add_argument("--fixed-tree-dir", dest='fixed_tree_dir')
 parser.add_argument("--glm")
+parser.add_arguemtn("--dir-pred-dir", dest="directional_predictors_dir")
 parser.add_argument("--chainlen", default="100000000")
 parser.add_argument("--log", default="10000")
 parser.add_argument("--file-stem", dest="file_stem")
@@ -39,6 +40,8 @@ fixed_tree_dir = args.fixed_tree_dir
 chain_length = args.chainlen
 log_every = args.log
 file_stem = args.file_stem
+glm = args.glm
+directional_predictors_dir = args.directional_predictors_dir
 
 
 ##move all these bits to core functions or glm functions at some point
@@ -53,13 +56,14 @@ if id_file:
 #######DISCRETE TRAITS#########
 new_traits = []
 trait_locs = {}
-all_trait_options = defaultdict(set)
+all_trait_options_prep = defaultdict(set)
+all_trait_options = defaultdict(list)
 if traits:
     new_traits = traits.split(",")
     for number, trait in enumerate(new_traits):
         trait_locs[trait] = int(number)
     
-    if trait_file: 
+    if trait_file: #ie row per sequence
         trait_dict = defaultdict(list)
         with open(trait_file) as f:
             data = csv.DictReader(f)
@@ -67,7 +71,11 @@ if traits:
                 name = line["sequence_name"]
                 for trait in new_traits:
                     trait_dict[name].append(line[trait])
-                    all_trait_options[trait].add(line[trait])
+                    all_trait_options_prep[trait].add(line[trait])
+                
+    for trait, options in all_trait_options_prep.items():
+        new_lst = sorted(options)
+        all_trait_options[trait] = new_lst
 #################################
 
 ###########FIXED TREE###############
@@ -96,11 +104,30 @@ if fixed_tree_dir:
 
 #####GLM section######
 if glm:
-    re_matrices = glm_funcs.make_twoway_REmatrices(trait_dict)
-    bin_probs = glm_funcs.calculate_binomial_likelihood(trait_dict)
+    re_matrices = glm_funcs.make_twoway_REmatrices(all_trait_options)
+    bin_probs = glm_funcs.calculate_binomial_likelihood(all_trait_options)
+    trait_to_predictor = defaultdict(dict)
+    for f in os.listdir(predictors_dir):
+        trait_name = predictors_dir.split("/")[-1] ##add an error here if this trait name isn't in the trait list above
+        if directional_predictors_file:
+            if predictors_dir in directional_predictors_file:
+                trait_to_predictor[trait_name] = process_directional_predictors(trait_name, directional_predictors_file)
+            else:
+                trait_to_predictor[trait_name] = process_directional_predictors(trait_name, os.path.join(predictors_dir,directional_predictors_file))
+        if non_directional_predictors_dir:
+            if predictors_dir in non_directional_predictors_dir:
+                direc = non_directional_predictors_dir
+            else:
+                direc = os.path.join(predictors_dir, non_directional_predictors_dir)
+            
+            for f in os.listdir(direc):
+                if f.endswith(".csv"):
+                    predictor_name = f.strip(".csv")
+                    trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], f)
+
 
 mytemplate = Template(filename=template, strict_undefined=True)
 f = open(f"{file_stem}.xml", 'w')
-f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, bin_probs=bin_probs, re_matrices=re_matrices, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
+f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, trait_to_predictor=trait_to_predictor, bin_probs=bin_probs, re_matrices=re_matrices, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
 f.close()
 

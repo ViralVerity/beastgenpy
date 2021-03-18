@@ -40,6 +40,7 @@
 <%  
 n_options = len(all_trait_options[trait])
 n_predictors = len(trait_to_predictor[trait])
+trait_rand_design = re_matrices[trait]
 %>
 <!-- general data type for discrete trait model, "${trait}"                  -->
     <generalDataType id="${trait}.dataType">
@@ -79,7 +80,7 @@ n_predictors = len(trait_to_predictor[trait])
 				</indicator>
 				<designMatrix id="${trait}.designMatrix">
 
-%for predictor, values in trait_to_predictor[${trait}].items():
+%for predictor, values in trait_to_predictor[trait].items():
 					<parameter id="${predictor}" value="${values}" />
 %endfor
 				</designMatrix>
@@ -243,7 +244,8 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 			<prior id="prior">
 
 %for trait in traits:
-<% n_predictors = len(trait_to_predictor[trait])%>
+<% n_predictors = len(trait_to_predictor[trait])
+bin_prob = bin_probs[trait]%>
 				
 				<ctmcScalePrior>
 					<ctmcScale>
