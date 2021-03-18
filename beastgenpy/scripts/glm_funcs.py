@@ -1,63 +1,11 @@
+##Functions for making dictionaries containing predictors and other things required for GLMs
+
 from Bio import SeqIO
 from geopy import distance
 from collections import defaultdict
 import csv
 import numpy as np
 import statistics
-
-
-def pseudocount(inputfile, col_header):        
-    pc_dict = {}
-    with open(inputfile, "r") as f:
-        r = csv.DictReader(f)
-        data = [i for i in r]
-        for loc in data:
-            relevant_col = loc[col_header]
-            pc_dict[loc["adm2"]] = relevant_col+1
-            
-    return pc_dict
-
-
-def transform_data(dictionary):
-    
-    transformed = {}
-
-    sd = np.stdev(dictionary.values())
-    mean = np.mean(dictionary.values())
-    
-    for key, value in dictionary.items():
-        transformed[key] = ((value - mean)/sd)
-
-    return transformed
-
-
-def circle_distance(fw, loc1, loc2):
-    d = distance.great_circle(centroid_dict[loc1], centroid_dict[loc2]).km
-    fw.write(str(loc1) + "," + str(loc2) + "," + str(d) + '\n')
-
-def get_centroids(map_file):
-
-    locations = gp.read_file(map_file)
-
-    locations['centroids'] = locations.centroid
-
-    centroid_dict = {}
-    for place, centroid in zip(locations["NAME_2"], locations["centroids"]):
-        centroid_dict[place.upper().replace(","," ").replace(" ","_")] = ((centroid.x, centroid.y))
-
-    location_pair_dict = defaultdict(list)
-
-    for location in centroid_dict.keys():
-        for location2 in centroid_dict.keys():
-            location_pair_dict[location].append(location2)
-
-    fw = open("distance_matrix.csv", 'w')
-    for k,v in location_pair_dict.items():
-        for item in v:
-            circle_distance(fw, k, item)
-    fw.close()
-
-    return len(locations)
 
 def REmatrices(matrix):
     indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
@@ -71,55 +19,46 @@ def REmatrices(matrix):
 
     vector = above_diag + below_diag #make one vector that is the top triangle read horizontally, and lower triangle read vertically
 
-def make_REmatrices(dim):
+    return vector
 
-    #Create nxn matrices of zeros ready for populating
-    frommatrix = np.zeros((dim,dim)) 
-    tomatrix = np.zeros((dim,dim))
+def make_twoway_REmatrices(trait_dict):
 
-    #These loops make from and to matrices for each location, and then passes them through the function to get random effect vector
-    for i in range(dim):
-        if i == 0:
-            frommatrix[i] = 1.0
-            frommatrix[i,i] = 0.0
-            REmatrices(frommatrix)
-        else:
-            frommatrix[i] = 1.0
-            frommatrix[i-1] = 0.0
-            frommatrix[i,i] = 0.0
-            REmatrices(frommatrix)
+    re_matrices = defaultdict(dict)
 
+    for trait, options in trait_dict.itesm():
+        trait_rand_design = {}
 
-    for i in range(dim):
-        if i == 0:
-            tomatrix[:,i] = 1.0
-            tomatrix[i,i] = 0.0
-            REmatrices(tomatrix)
-        else:
-            tomatrix[:,i] = 1.0
-            tomatrix[:,i-1] = 0.0
-            tomatrix[i,i] = 0.0
-            REmatrices(tomatrix)
+        #Create nxn matrices of zeros ready for populating
+        dim = len(options)
+        frommatrix = np.zeros((dim,dim)) 
+        tomatrix = np.zeros((dim,dim))
 
-def write_ambiguity_codes(xml_file, ambig_file):
+        #These loops make from and to matrices for each trait, and then passes them through the function to get random effect vector
+        for i, option in enumerate(options):
+            key_from = f'{option}_from'
+            key_to = f'{option}_to'
+            if i == 0:
+                frommatrix[i] = 1.0
+                frommatrix[i,i] = 0.0
+                from_value = REmatrices(frommatrix)
 
-    with open(ambig_file) as f:
-        next(f)
-        for l in f:
-            toks = l.strip("\n").split(",")
-            adm2 = toks[0]
-            ambigs = toks[1].replace("|"," ")
-            xml_file.write(f'<ambiguity code="{adm2}" states="{ambigs}"/>\n')
+                tomatrix[:,i] = 1.0
+                tomatrix[i,i] = 0.0
+                to_value = REmatrices(tomatrix)
+            else:
+                frommatrix[i] = 1.0
+                frommatrix[i-1] = 0.0
+                frommatrix[i,i] = 0.0
+                from_value = REmatrices(frommatrix)
 
+                tomatrix[:,i] = 1.0
+                tomatrix[:,i-1] = 0.0
+                tomatrix[i,i] = 0.0
+                to_value = REmatrices(tomatrix)
 
-def random_matrix_prolif(location, position):
-    vector = np.zeros((dim,), dtype=int)
-    vector[position] = 1
-    line = '<parameter id="' + location + '_rand" value="' + str(vector) + '"/>' 
-    line.replace("[", "")
+            trait_rand_design[key_from] = from_value
+            trait_rand_design[key_to] = to_value
 
-    
+        re_matrices[trait] = trait_rand_design
 
-
-
-
+    return re_matrices
