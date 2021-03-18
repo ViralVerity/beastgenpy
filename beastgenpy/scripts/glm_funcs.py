@@ -62,3 +62,14 @@ def make_twoway_REmatrices(trait_dict):
         re_matrices[trait] = trait_rand_design
 
     return re_matrices
+
+def calculate_binomial_likelihoods(trait_dict):
+
+    bin_probs  = {}
+    
+    for trait, options in trait_dict.items():
+        n = len(options)
+        p = 1 - (0.5**(1/n))
+        bin_probs[trait] = p
+    
+    return bin_probs

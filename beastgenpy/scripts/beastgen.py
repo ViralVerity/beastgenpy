@@ -5,6 +5,7 @@ import os
 import csv
 from mako.template import Template
 from collections import defaultdict
+import glm_funcs as glm_funcs
 
 parser = argparse.ArgumentParser(add_help=False, description='make XML')
 
@@ -16,8 +17,9 @@ parser.add_argument("--traits")
 # parser.add_argument("--trait-order", dest="trait_order")
 #parser.add_argument("--codon-partitioning", dest="codon_partitioning")
 parser.add_argument("--trait-file", dest="trait_file")
-parser.add_argument("--fixed-tree-file", dest="fixed_tree_file") #will need to make this a dir to deal with multi trees
+parser.add_argument("--fixed-tree-file", dest="fixed_tree_file") 
 parser.add_argument("--fixed-tree-dir", dest='fixed_tree_dir')
+parser.add_argument("--glm")
 parser.add_argument("--chainlen", default="100000000")
 parser.add_argument("--log", default="10000")
 parser.add_argument("--file-stem", dest="file_stem")
@@ -39,7 +41,7 @@ log_every = args.log
 file_stem = args.file_stem
 
 
-##move all these bits to core functions at some point
+##move all these bits to core functions or glm functions at some point
 
 #######TAXA IF NO FASTA##############
 id_list = []
@@ -92,9 +94,13 @@ if fixed_tree_dir:
 
 ################################
 
+#####GLM section######
+if glm:
+    re_matrices = glm_funcs.make_twoway_REmatrices(trait_dict)
+    bin_probs = glm_funcs.calculate_binomial_likelihood(trait_dict)
 
 mytemplate = Template(filename=template, strict_undefined=True)
 f = open(f"{file_stem}.xml", 'w')
-f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
+f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, bin_probs=bin_probs, re_matrices=re_matrices, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
 f.close()
 
