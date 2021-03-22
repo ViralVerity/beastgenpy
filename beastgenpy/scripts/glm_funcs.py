@@ -22,7 +22,18 @@ def make_vector(matrix, dim):
 
     return vector
 
-def process_directional_predictors(trait_name, predictor_file):
+def process_info_file(info_file):
+
+    standardised_transformed_list = []
+    with open(info_file) as f:
+        data = csv.DictReader(f)
+        for l in data:
+            if l["log_transformed_and_standardised"] == "True":
+                standardised_transformed_list.append(l['predictor'])
+
+    return standardised_transformed_list
+
+def process_directional_predictors(trait_name, predictor_file, standardised_transformed_list):
 
     ##process folder, make sure 
     #format needs to be a column with a trait value and then one column per predictor value. Separate csvs for different traits
@@ -40,7 +51,16 @@ def process_directional_predictors(trait_name, predictor_file):
             for line in data:
                 inner_dict[line[trait_name]] = float(line[predictor])
 
-            predictor_dict[predictor] = inner_dict
+            if predictor in standardised_transformed_list:
+                intermediate = {}
+                for key,value in inner_dict.items():
+                    intermediate[key] = np.log(values)
+                new_inner = standardise(intermediate)
+            else:
+                new_inner = inner_dict
+            
+            predictor_dict[predictor] = new_inner
+
 
     sorted_predictor_values = defaultdict(list)
     for predictor, values_set in predictor_dict.items():
@@ -155,3 +175,25 @@ def calculate_binomial_likelihoods(trait_options_dict):
         bin_probs[trait] = p
     
     return bin_probs
+
+def standardise(dictionary):
+    
+    standardised = {}
+
+    sd = np.stdev(dictionary.values())
+    mean = np.mean(dictionary.values())
+    
+    for key, value in dictionary.items():
+        standardised[key] = ((value - mean)/sd)
+
+    return standardised
+
+def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait_to_predictor):
+
+    for f in os.listdir(actual_predictor_dir):
+
+        if f != info_file and f != directional_file:
+
+            predictor_name = f.strip(".csv")
+            trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], f)
+

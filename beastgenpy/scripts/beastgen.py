@@ -20,7 +20,8 @@ parser.add_argument("--trait-file", dest="trait_file")
 parser.add_argument("--fixed-tree-file", dest="fixed_tree_file") 
 parser.add_argument("--fixed-tree-dir", dest='fixed_tree_dir')
 parser.add_argument("--glm")
-parser.add_arguemtn("--dir-pred-dir", dest="directional_predictors_dir")
+parser.add_argument("--predictor-info-file", dest="predictor_info_file") #list of predictors that you want logged and standardise
+parser.add_arguemtn("--predictors-dir", dest="predictors_dir")
 parser.add_argument("--chainlen", default="100000000")
 parser.add_argument("--log", default="10000")
 parser.add_argument("--file-stem", dest="file_stem")
@@ -41,7 +42,8 @@ chain_length = args.chainlen
 log_every = args.log
 file_stem = args.file_stem
 glm = args.glm
-directional_predictors_dir = args.directional_predictors_dir
+predictor_info_file = args.predictor_info_file
+predictors_dir = args.predictors_dir
 
 
 ##move all these bits to core functions or glm functions at some point
@@ -104,26 +106,20 @@ if fixed_tree_dir:
 
 #####GLM section######
 if glm:
+    #need to make this robust to working directory
     re_matrices = glm_funcs.make_twoway_REmatrices(all_trait_options)
     bin_probs = glm_funcs.calculate_binomial_likelihood(all_trait_options)
     trait_to_predictor = defaultdict(dict)
-    for f in os.listdir(predictors_dir):
-        trait_name = predictors_dir.split("/")[-1] ##add an error here if this trait name isn't in the trait list above
-        if directional_predictors_file:
-            if predictors_dir in directional_predictors_file:
-                trait_to_predictor[trait_name] = process_directional_predictors(trait_name, directional_predictors_file)
-            else:
-                trait_to_predictor[trait_name] = process_directional_predictors(trait_name, os.path.join(predictors_dir,directional_predictors_file))
-        if non_directional_predictors_dir:
-            if predictors_dir in non_directional_predictors_dir:
-                direc = non_directional_predictors_dir
-            else:
-                direc = os.path.join(predictors_dir, non_directional_predictors_dir)
-            
-            for f in os.listdir(direc):
-                if f.endswith(".csv"):
-                    predictor_name = f.strip(".csv")
-                    trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], f)
+    if len(new_traits) == 1:
+        trait_name = new_traits[0]
+        actual_predictor_dir = predictors_dir
+        trait_to_predictor = glm_funcs.loop_for_processing(actual_predictor_dir, predictor_info_file, directional_file, trait_name, trait_to_predictor, all_trait_options)
+
+    else:
+        for trait_name in new_traits:
+            actual_predictor_dir = os.path.join(predictors_dir,trait)
+            trait_to_predictor = glm_funcs.loop_for_processing(actual_predictor_dir, predictor_info_file, directional_file, trait_name, trait_to_predictor, all_trait_options)
+
 
 
 mytemplate = Template(filename=template, strict_undefined=True)
