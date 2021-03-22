@@ -188,12 +188,15 @@ def standardise(dictionary):
 
     return standardised
 
-def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait_to_predictor):
+def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait_name, trait_to_predictor, all_trait_options):
+
+    standardised_transformed_list = process_info_file(info_file)
 
     for f in os.listdir(actual_predictor_dir):
-
         if f != info_file and f != directional_file:
-
             predictor_name = f.strip(".csv")
             trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], f)
+        elif f == directional_file:
+            trait_to_predictor[trait_name] = process_directional_predictors(trait_name, directional_predictors_file, standardised_transformed_list)
 
+    return trait_to_predictor
