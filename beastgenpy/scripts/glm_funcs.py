@@ -28,7 +28,7 @@ def process_info_file(info_file):
     with open(info_file) as f:
         data = csv.DictReader(f)
         for l in data:
-            if l["log_transformed_and_standardised"] == "True":
+            if l["log_transformed_and_standardised"].upper() == "TRUE":
                 standardised_transformed_list.append(l['predictor'])
 
     return standardised_transformed_list
@@ -90,31 +90,41 @@ def process_directional_predictors(trait_name, predictor_file, standardised_tran
 
     return predictor_dict
 
-def process_oneway_predictors(trait_name, trait_options, predictor_file):
+def process_oneway_predictors(trait_name, trait_options, std_trans, predictor_file):
            
     option_list = sorted(trait_options)
     dim = len(option_list)
     option_position = {}
     option_tups = []
-    
+
     for i,option in enumerate(option_list):
         option_position[option] = i
         for option2 in option_list:
-            option_tups.append((option, option2))
+            if option != option2:
+                option_tups.append((option, option2))
 
     tup_dict = {}
     for tup in option_tups:
         tup_dict[tup] = ""
 
+        
     with open(predictor_file) as f:
         data = csv.DictReader(f)
         for l in data:
             first_ele = l[trait_name]
             for option in option_list:
                 key = (first_ele, option)
-                tup_dict[key] = l[option]
-    
+                if first_ele != option:
+                    if log_std:
+                        tup_dict[key] = np.log(float(l[option]))
+                    else:
+                        tup_dict[key] = l[option]
+
+    if log_std:
+        tup_dict = standardise(tup_dict)
+
     matrix = np.zeros((dim, dim)) 
+
     for tup, value in tup_dict.items():
         location_1 = option_position[tup[0]]
         location_2 = option_position[tup[1]]
@@ -122,7 +132,7 @@ def process_oneway_predictors(trait_name, trait_options, predictor_file):
         matrix[location_1, location_2] = value
 
     vector = make_vector(matrix, dim)
-    
+
     return vector
 
 
@@ -180,13 +190,11 @@ def standardise(dictionary):
     
     standardised = {}
 
-    sd = np.stdev(dictionary.values())
-    mean = np.mean(dictionary.values())
+    sd = np.std(list(dictionary.values()))
+    mean = np.mean(list(dictionary.values()))
     
     for key, value in dictionary.items():
         standardised[key] = ((value - mean)/sd)
-
-    return standardised
 
 def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait_name, trait_to_predictor, all_trait_options):
 
@@ -195,7 +203,10 @@ def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait
     for f in os.listdir(actual_predictor_dir):
         if f != info_file and f != directional_file:
             predictor_name = f.strip(".csv")
-            trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], f)
+            if predictor_name in standardised_transformed_list:
+                trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], True, f)
+            else:
+                trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], False, f)
         elif f == directional_file:
             trait_to_predictor[trait_name] = process_directional_predictors(trait_name, directional_predictors_file, standardised_transformed_list)
 
