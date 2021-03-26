@@ -6,6 +6,7 @@ from collections import defaultdict
 import csv
 import numpy as np
 import statistics
+import os
 
 def make_vector(matrix, dim):
     indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
@@ -33,7 +34,7 @@ def process_info_file(info_file):
 
     return standardised_transformed_list
 
-def process_directional_predictors(trait_name, predictor_file, standardised_transformed_list):
+def process_asymmetric_predictors(trait_name, predictor_file, standardised_transformed_list):
 
     ##process folder, make sure 
     #format needs to be a column with a trait value and then one column per predictor value. Separate csvs for different traits
@@ -90,7 +91,7 @@ def process_directional_predictors(trait_name, predictor_file, standardised_tran
 
     return predictor_dict
 
-def process_oneway_predictors(trait_name, trait_options, std_trans, predictor_file):
+def process_symmetric_predictors(trait_name, trait_options, std_trans, predictor_file):
            
     option_list = sorted(trait_options)
     dim = len(option_list)
@@ -107,7 +108,6 @@ def process_oneway_predictors(trait_name, trait_options, std_trans, predictor_fi
     for tup in option_tups:
         tup_dict[tup] = ""
 
-        
     with open(predictor_file) as f:
         data = csv.DictReader(f)
         for l in data:
@@ -175,7 +175,7 @@ def make_twoway_REmatrices(trait_options_dict):
 
     return re_matrices
 
-def calculate_binomial_likelihoods(trait_options_dict):
+def calculate_binomial_likelihood(trait_options_dict):
 
     bin_probs  = {}
     
@@ -187,7 +187,7 @@ def calculate_binomial_likelihoods(trait_options_dict):
     return bin_probs
 
 def standardise(dictionary):
-    
+
     standardised = {}
 
     sd = np.std(list(dictionary.values()))
@@ -196,18 +196,19 @@ def standardise(dictionary):
     for key, value in dictionary.items():
         standardised[key] = ((value - mean)/sd)
 
-def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait_name, trait_to_predictor, all_trait_options):
+def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_name, trait_to_predictor, all_trait_options):
 
     standardised_transformed_list = process_info_file(info_file)
 
     for f in os.listdir(actual_predictor_dir):
-        if f != info_file and f != directional_file:
+        if f != info_file and f != asymmetric_file and f.endswith(".csv"):
+            print(f)
             predictor_name = f.strip(".csv")
             if predictor_name in standardised_transformed_list:
-                trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], True, f)
+                trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(trait_name, all_trait_options[trait_name], True, f)
             else:
-                trait_to_predictor[trait_name][predictor_name] = process_oneway_predictors(trait_name, all_trait_options[trait_name], False, f)
-        elif f == directional_file:
-            trait_to_predictor[trait_name] = process_directional_predictors(trait_name, directional_predictors_file, standardised_transformed_list)
+                trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(trait_name, all_trait_options[trait_name], False, f)
+        elif f == asymmetric_file:
+            trait_to_predictor[trait_name] = process_asym_predictors(trait_name, asymmetric_file, standardised_transformed_list)
 
     return trait_to_predictor

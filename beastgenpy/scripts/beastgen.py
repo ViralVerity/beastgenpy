@@ -19,9 +19,10 @@ parser.add_argument("--traits")
 parser.add_argument("--trait-file", dest="trait_file")
 parser.add_argument("--fixed-tree-file", dest="fixed_tree_file") 
 parser.add_argument("--fixed-tree-dir", dest='fixed_tree_dir')
-parser.add_argument("--glm")
+parser.add_argument("--glm", action="store_true")
 parser.add_argument("--predictor-info-file", dest="predictor_info_file") #list of predictors that you want logged and standardise
-parser.add_arguemtn("--predictors-dir", dest="predictors_dir")
+parser.add_argument("--asymmetric-predictor-file", dest="asymmetric_predictor_file")
+parser.add_argument("--predictors-dir", dest="predictors_dir")
 parser.add_argument("--chainlen", default="100000000")
 parser.add_argument("--log", default="10000")
 parser.add_argument("--file-stem", dest="file_stem")
@@ -43,6 +44,7 @@ log_every = args.log
 file_stem = args.file_stem
 glm = args.glm
 predictor_info_file = args.predictor_info_file
+directional_predictor_file = args.asymmetric_predictor_file
 predictors_dir = args.predictors_dir
 
 
@@ -113,12 +115,12 @@ if glm:
     if len(new_traits) == 1:
         trait_name = new_traits[0]
         actual_predictor_dir = predictors_dir
-        trait_to_predictor = glm_funcs.loop_for_processing(actual_predictor_dir, predictor_info_file, directional_file, trait_name, trait_to_predictor, all_trait_options)
+        trait_to_predictor = glm_funcs.loop_for_processing(actual_predictor_dir, predictor_info_file, directional_predictor_file, trait_name, trait_to_predictor, all_trait_options)
 
     else:
         for trait_name in new_traits:
             actual_predictor_dir = os.path.join(predictors_dir,trait)
-            trait_to_predictor = glm_funcs.loop_for_processing(actual_predictor_dir, predictor_info_file, directional_file, trait_name, trait_to_predictor, all_trait_options)
+            trait_to_predictor = glm_funcs.loop_for_processing(actual_predictor_dir, predictor_info_file, directional_predictor_file, trait_name, trait_to_predictor, all_trait_options)
 
 
 
