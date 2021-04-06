@@ -19,7 +19,7 @@ def make_vector(matrix, dim):
     above_diag = np.array2string(upper, formatter = {'float': lambda upper: "%.1f" % upper})
 
     vector = above_diag + below_diag #make one vector that is the top triangle read horizontally, and lower triangle read vertically
-    vector = vector.replace("]["," ").replace("[","").replace("]","")
+    vector = vector.replace("]["," ").replace("[","").replace("]","").replace("\n","")
 
     return vector
 
@@ -40,37 +40,40 @@ def process_asymmetric_predictors(trait_name, predictor_file, standardised_trans
     #format needs to be a column with a trait value and then one column per predictor value. Separate csvs for different traits
     predictor_list = []
     predictor_dict = defaultdict(dict)
+
     with open(predictor_file) as f:
         data = csv.DictReader(f)
         headers = data.fieldnames
         for i in headers:
             if i != trait_name:
                 predictor_list.append(i)
+                
+        for line in data:
+            for predictor in predictor_list:
+                predictor_dict[predictor][line[trait_name]] = float(line[predictor])
+                
+    final_predictor_dict = defaultdict(dict)
+                
+    for predictor, inner_dict in predictor_dict.items():
+                
+        if predictor in standardised_transformed_list:
+            intermediate = {}
+            for key,value in inner_dict.items():
+                intermediate[key] = np.log(value)            
+            new_inner = standardise(intermediate)
+        else:
+            new_inner = inner_dict
 
-        for predictor in predictor_list:
-            inner_dict = {}
-            for line in data:
-                inner_dict[line[trait_name]] = float(line[predictor])
-
-            if predictor in standardised_transformed_list:
-                intermediate = {}
-                for key,value in inner_dict.items():
-                    intermediate[key] = np.log(values)
-                new_inner = standardise(intermediate)
-            else:
-                new_inner = inner_dict
-            
-            predictor_dict[predictor] = new_inner
-
+        final_predictor_dict[predictor] = new_inner
 
     sorted_predictor_values = defaultdict(list)
-    for predictor, values_set in predictor_dict.items():
+    for predictor, values_set in final_predictor_dict.items():
         ordered_values = sorted(values_set.items())
         for i in ordered_values:
             sorted_predictor_values[predictor].append(i[1])
 
     ## now going to make a matrix ##
-    predictor_dict = {}
+    matrix_dict = {}
     for predictor, values in sorted_predictor_values.items():
         dim = len(values)
         frommatrix = np.zeros((dim,dim)) 
@@ -86,12 +89,12 @@ def process_asymmetric_predictors(trait_name, predictor_file, standardised_trans
         from_value = make_vector(frommatrix, dim)  
         to_value = make_vector(tomatrix,dim)
 
-        predictor_dict[key_from] = from_value
-        predictor_dict[key_to] = to_value
+        matrix_dict[key_from] = from_value
+        matrix_dict[key_to] = to_value
 
-    return predictor_dict
+    return matrix_dict
 
-def process_symmetric_predictors(trait_name, trait_options, std_trans, predictor_file):
+def process_symmetric_predictors(predictor_name, trait_name, trait_options, std_trans, predictor_file):
            
     option_list = sorted(trait_options)
     dim = len(option_list)
@@ -110,17 +113,24 @@ def process_symmetric_predictors(trait_name, trait_options, std_trans, predictor
 
     with open(predictor_file) as f:
         data = csv.DictReader(f)
+        headers = data.fieldnames
         for l in data:
-            first_ele = l[trait_name]
+            if trait_name in headers:
+                first_ele = l[trait_name]
+            elif predictor_name in headers:
+                first_ele = l[predictor_name]
+            else:
+                first_ele = l[""]
+            
             for option in option_list:
                 key = (first_ele, option)
                 if first_ele != option:
-                    if log_std:
+                    if std_trans:
                         tup_dict[key] = np.log(float(l[option]))
                     else:
                         tup_dict[key] = l[option]
 
-    if log_std:
+    if std_trans:
         tup_dict = standardise(tup_dict)
 
     matrix = np.zeros((dim, dim)) 
@@ -196,19 +206,29 @@ def standardise(dictionary):
     for key, value in dictionary.items():
         standardised[key] = ((value - mean)/sd)
 
+    return standardised
+
 def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_name, trait_to_predictor, all_trait_options):
 
     standardised_transformed_list = process_info_file(info_file)
 
+    if actual_predictor_dir not in asymmetric_file:
+        asymmetric_file = os.path.join(actual_predictor_dict, asymmetric_file)
+    if actual_predictor_dir not in info_file:
+        info_file = os.path.join(actual_predictor_dict, info_file)
+
     for f in os.listdir(actual_predictor_dir):
-        if f != info_file and f != asymmetric_file and f.endswith(".csv"):
-            print(f)
-            predictor_name = f.strip(".csv")
-            if predictor_name in standardised_transformed_list:
-                trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(trait_name, all_trait_options[trait_name], True, f)
+        pred_file = os.path.join(actual_predictor_dir, f)
+        if pred_file != info_file and pred_file != asymmetric_file and pred_file.endswith(".csv"):
+            if "/" in pred_file:
+                predictor_name = pred_file.split("/")[-1].strip(".csv")
             else:
-                trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(trait_name, all_trait_options[trait_name], False, f)
-        elif f == asymmetric_file:
-            trait_to_predictor[trait_name] = process_asym_predictors(trait_name, asymmetric_file, standardised_transformed_list)
+                predictor_name = pred_file.strip(".csv")
+            if predictor_name in standardised_transformed_list:
+                trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(predictor_name, trait_name, all_trait_options[trait_name], True, pred_file)
+            else:
+                trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(predictor_name, trait_name, all_trait_options[trait_name], False, pred_file)
+        elif pred_file == asymmetric_file:
+            trait_to_predictor[trait_name] = process_asymmetric_predictors(trait_name, asymmetric_file, standardised_transformed_list)
 
     return trait_to_predictor

@@ -157,13 +157,13 @@ trait_rand_design = re_matrices[trait]
 		<frequencyModel id="${trait}.root.frequencyModel" normalize="true">
 			<generalDataType idref="${trait}.dataType"/>
 			<frequencies>
-				<parameter id="${trait}.root.frequencies" dimension="${n}"/>
+				<parameter id="${trait}.root.frequencies" dimension="${n_options}"/>
 			</frequencies>
 		</frequencyModel>
 
         <!-- Ancestral state reconstruction -->
 <% 
-len_1s = (n**2)-2
+len_1s = (n_options**2)-2
 all_count_lst = [0.0]
 for i in range(len_1s):
     all_count_lst.append(1.0)
@@ -175,7 +175,7 @@ all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
         <rewards>
 %for place,option in enumerate(all_trait_options[trait]):
 <% reward_trait_list = []
-for i in range(n):
+for i in range(n_options):
     if i != place:
         reward_trait_list.append(0.0)
     else:

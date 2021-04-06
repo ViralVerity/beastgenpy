@@ -47,6 +47,8 @@ predictor_info_file = args.predictor_info_file
 directional_predictor_file = args.asymmetric_predictor_file
 predictors_dir = args.predictors_dir
 
+thisdir = os.path.abspath(os.path.dirname(__file__))
+cwd = os.getcwd()
 
 ##move all these bits to core functions or glm functions at some point
 
