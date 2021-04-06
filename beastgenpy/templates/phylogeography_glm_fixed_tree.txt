@@ -1,3 +1,4 @@
+<?xml version="1.0" standalone="yes"?>
 <%
     import core_funcs
 %> 
@@ -339,7 +340,7 @@ bin_prob = bin_probs[trait]%>
 %for trait in traits:
 		<!-- START Discrete Traits Model                                             -->
 		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="${log_every}" fileName="${file_stem}.${trait}.rates.log">
-			<<parameter idref="${trait}.coefIndicator"/>
+			<parameter idref="${trait}.coefIndicator"/>
 			<parameter idref="${trait}.glmCoefficients"/>
 			<productStatistic idref="${trait}.coefficientsTimesIndicators"/>
 			<parameter idref="coefRandIndicator_${trait}"/>
