@@ -104,7 +104,7 @@ if fixed_tree_dir:
                     fixed_tree = l.strip("\n").lstrip("[&R] ")
                 tree_name = f.split("/")[-1].split(".")[0]
                 tree_dict[tree_name] = fixed_tree
-
+    tree_name = ""
 
 ################################
 
