@@ -1,3 +1,4 @@
+<?xml version="1.0" standalone="yes"?>
 <%
     from Bio import SeqIO
     import core_funcs

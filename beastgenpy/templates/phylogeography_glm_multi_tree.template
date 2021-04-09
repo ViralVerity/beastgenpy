@@ -3,7 +3,6 @@
     import core_funcs
 %> 
 <!--generated with beastgen.py-->
-<!-- this is new so it's all very exciting-->
 
 <beast>
 
@@ -32,12 +31,14 @@
     ${newick_string}
     </newick>
 
-    <!-- possibly tree model here - for now we dont need it, but if we do: -->
-    <bigFastTreeModel id="treeModel_${tree_name}">
-		<tree idref="${tree_name}"/>
-	</bigFastTreeModel>
+    <constrainedTreeModel id = "treeModel_${tree_name}">
+		<treeModel idref="${tree_name}"/>
+		<constraintsTree>
+			<tree idref="${tree_name}"/>
+		</constraintsTree>
+	</constrainedTreeModel>
 
-%endfor
+%endforr
 
 %for trait in traits:
 <%  
@@ -149,7 +150,7 @@ trait_rand_design = re_matrices[trait]
     </siteModel>
 	
 %for tree_name in tree_dict.keys():
-	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
+	<markovJumpsTreeLikelihood id="${trait}_${tree_name}.treeLikelihood" stateTagName="${trait}_${tree_name}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
 		<attributePatterns idref="${trait}.pattern"/>
 		<treeModel idref="treeModel_${tree_name}"/>
 		<siteModel idref="${trait}.siteModel"/>
@@ -157,10 +158,10 @@ trait_rand_design = re_matrices[trait]
 		<strictClockBranchRates idref="${trait}.branchRates"/>
 
 		<!-- The root state frequencies                                              -->
-		<frequencyModel id="${trait}.root.frequencyModel" normalize="true">
+		<frequencyModel id="${trait}_${tree_name}.root.frequencyModel" normalize="true">
 			<generalDataType idref="${trait}.dataType"/>
 			<frequencies>
-				<parameter id="${trait}.root.frequencies" dimension="${n_options}"/>
+				<parameter id="${trait}_${tree_name}.root.frequencies" dimension="${n_options}"/>
 			</frequencies>
 		</frequencyModel>
 
@@ -173,7 +174,7 @@ for i in range(len_1s):
 all_count_lst.append(0.0)
 all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
 %>       
-        <parameter id="${trait}.count" value="${all_count_string}"/>
+        <parameter id="${trait}_${tree_name}.count" value="${all_count_string}"/>
 
         <rewards>
 %for place,option in enumerate(all_trait_options[trait]):
@@ -184,7 +185,7 @@ for i in range(n_options):
     else:
         reward_trait_list.append(1.0)
 reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
-            <parameter id="${option}_R"       value="${reward_trait_str}"/>
+            <parameter id="${option}_R_${tree_name}"       value="${reward_trait_str}"/>
 %endfor%
         </rewards>
     </markovJumpsTreeLikelihood>
@@ -201,9 +202,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 		<bitFlipOperator weight="7">
 			<parameter idref="${trait}.coefIndicator"/>
 		</bitFlipOperator>
-		<deltaExchange delta="0.75" weight="1">
-			<parameter idref="${trait}.root.frequencies"/>
-		</deltaExchange>
+		
 		<rateBitExchangeOperator weight="3" usesPriorOnSum="false">
 			<bits>
 				<parameter idref="${trait}.coefIndicator"/>
@@ -240,6 +239,11 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 			</prior>
 		</normalGammaPrecisionGibbsOperator>
 
+%for tree_name in tree_dict.keys():
+		<deltaExchange delta="0.75" weight="1">
+			<parameter idref="${trait}_${tree_name}.root.frequencies"/>
+		</deltaExchange>
+
 %endfor
         </operators>
     
@@ -250,16 +254,15 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 %for trait in traits:
 <% n_predictors = len(trait_to_predictor[trait])
 bin_prob = bin_probs[trait]%>
+%for tree_name in tree_dict.keys():
 				
 				<ctmcScalePrior>
 					<ctmcScale>
 						<parameter idref="${trait}.rate"/>
 					</ctmcScale>
-%for tree_name in tree_dict.keys(): #not sure if this is where it goes - it might need to be whole ctmc, in which case the rate might need to change?
                 	<treeModel idref="treeModel_${tree_name}"/>
-%endfor
 				</ctmcScalePrior>
-
+%endfor
 				<normalPrior mean="0" stdev="2">
 					<parameter idref="${trait}.glmCoefficients"/>
 				</normalPrior>
@@ -331,7 +334,9 @@ bin_prob = bin_probs[trait]%>
 			<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
 
 			<parameter idref="${trait}.rate"/>
-			<parameter idref="${trait}.root.frequencies"/>
+%for tree_name in tree_dict:
+			<parameter idref="${trait}_${tree_name}.root.frequencies"/>
+%endfor
 
 			<!-- START Discrete Traits Model                                             -->
 			<sumStatistic idref="${trait}.nonZeroIndicators"/>
@@ -377,9 +382,8 @@ bin_prob = bin_probs[trait]%>
 %endfor
 		</logTree>
 
-
 		<!-- write complete history tree log to file                                 -->
-		<logTree logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.history.trees" sortTranslationTable="true">
+		<logTree logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}_${tree_name}.history.trees" sortTranslationTable="true">
 			<treeModel idref="treeModel_${tree_name}"/>
 %for trait in traits:
             <markovJumpsTreeLikelihood idref="${trait}_${tree_name}.treeLikelihood"/>
