@@ -23,7 +23,7 @@ parser.add_argument("--fixed-tree-dir", dest='fixed_tree_dir')
 parser.add_argument("--glm", action="store_true")
 parser.add_argument("--predictor-info-file", dest="predictor_info_file") #list of predictors that you want logged and standardise
 parser.add_argument("--asymmetric-predictor-file", dest="asymmetric_predictor_file")
-paser.add_argument("--taxon-set-file", dest="taxon_set_file") #must be provided if multi-tree
+paser.add_argument("--taxon-set-file", dest="taxon_set_file") #must be provided if multi-tree and not fixed tree
 parser.add_argument("--predictors-dir", dest="predictors_dir")
 parser.add_argument("--chainlen", default="100000000")
 parser.add_argument("--log", default="10000")
@@ -53,14 +53,18 @@ predictors_dir = args.predictors_dir
 thisdir = os.path.abspath(os.path.dirname(__file__))
 cwd = os.getcwd()
 
-##move all these bits to core functions or glm functions at some point
+##move all these bits to core functions or glm functions at some point. Would be nice to have different modules for different analysis types
+#realistically, a lot of this needs re-writing and re-framing. Looks like the actual functions are ok, but some of the data structures need thinking about
+config = {}
+
 
 #######TAXA IF NO FASTA##############
 id_list = []
 if id_file:
     with open(id_file) as f:
-        for l in f:
-            id_list.append(l.strip("\n"))
+        data = csv.dictReader(f)
+        for l in data:
+            id_list.append(l["taxon"])
 
 #######DISCRETE TRAITS#########
 new_traits = []
@@ -87,8 +91,10 @@ if traits:
         new_lst = sorted(options)
         all_trait_options[trait] = new_lst
 
-    if taxon_set_file: #if multitree
-        options_per_tree = core_funcs.get_options_per_tree(trait_locs, trait_dict, taxon_set_file)
+
+
+    # if taxon_set_file: #if multitree
+    #     options_per_tree = core_funcs.get_options_per_tree(trait_locs, trait_dict, taxon_set_file)
 #################################
 
 ###########FIXED TREE###############
@@ -103,6 +109,7 @@ else:
     fixed_tree = ""
 
 tree_dict = {}
+tree_file_list = []
 if fixed_tree_dir:
     for f in os.listdir(fixed_tree_dir):
         if f.endswith(".newick") or f.endswith(".nwk") or f.endswith("tree"): #for now, will only take newick strings
@@ -111,6 +118,7 @@ if fixed_tree_dir:
                     fixed_tree = l.strip("\n").lstrip("[&R] ")
                 tree_name = f.split("/")[-1].split(".")[0]
                 tree_dict[tree_name] = fixed_tree
+            tree_file_list.append(f)
     tree_name = ""
 
 ################################
@@ -133,8 +141,41 @@ if glm:
 
 
 
+#####CONTINUOUS PHYLOGEOGRAPHY####
+if cont_phylo:
+    #this template should be generalised to be fixed tree or not fixed, and multi/not multi
+    traits = ["longitude", "latitude", "coordinates"]
+    trait_dict = core_funcs.process_coordinates(trait_file)
+
+
+###Final set up####
+config["id_list"] = id_list
+
+#fixed tree analyses
+config["tree"] = fixed_tree
+config["tree_name"] = tree_name
+config["tree_dict"] = tree_dict
+config["tree_file_list"] = tree_file_list
+
+#DTA stuff
+config["traits"] = new_traits
+config["trait_dict"] = trait_dict
+config["trait_locs"] = trait_locs
+config["all_trait_options"] = all_trait_options
+
+##DTA GLM
+config["trait_to_predictor"] = trait_to_predictor
+config["bin_probs"]=bin_probs
+config["re_matrices"] =re_matrices
+
+##general options
+config["chain_length"]=chain_length
+config["log_every"]=log_every
+config["file_stem"]=file_stem
+
+
 mytemplate = Template(filename=template, strict_undefined=True)
 f = open(f"{file_stem}.xml", 'w')
-f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, options_per_tree=options_per_tree, trait_to_predictor=trait_to_predictor, bin_probs=bin_probs, re_matrices=re_matrices, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
+f.write(mytemplate.render(config=config))
 f.close()
 
