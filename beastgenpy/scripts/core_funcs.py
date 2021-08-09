@@ -31,12 +31,12 @@ def process_coordinates(trait_file):
     trait_dict = defaultdict(dict)
 
     with open(trait_file) as f:
-        data = csv.DictReader(f)
+        data = csv.DictReader(f, delimiter="\t")
         for l in data:
             inner_dict = {}
             inner_dict["longitude"] = l['longitude']
             inner_dict["latitude"] = l["latitude"]
-            inner_dict["coordinates"] = f"{l['longitude']} {l['latitude']}")
+            inner_dict["coordinates"] = f"{l['longitude']} {l['latitude']}"
 
             trait_dict[l['taxon']] = inner_dict
 

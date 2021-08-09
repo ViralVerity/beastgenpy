@@ -12,18 +12,20 @@ parser = argparse.ArgumentParser(add_help=False, description='make XML')
 
 parser.add_argument("--fasta")
 parser.add_argument("--id-file", dest="id_file")
-parser.add_argument("--template")
+parser.add_argument("--id-file-dir", dest="id_file_dir")
+parser.add_argument("--template", required=True)
 parser.add_argument("--map-file", dest="map_file")
 parser.add_argument("--traits")
 # parser.add_argument("--trait-order", dest="trait_order")
 #parser.add_argument("--codon-partitioning", dest="codon_partitioning")
+parser.add_argument("--cont-phylo", action="store_true",dest="cont_phylo")
 parser.add_argument("--trait-file", dest="trait_file")
 parser.add_argument("--fixed-tree-file", dest="fixed_tree_file") 
 parser.add_argument("--fixed-tree-dir", dest='fixed_tree_dir')
 parser.add_argument("--glm", action="store_true")
 parser.add_argument("--predictor-info-file", dest="predictor_info_file") #list of predictors that you want logged and standardise
 parser.add_argument("--asymmetric-predictor-file", dest="asymmetric_predictor_file")
-paser.add_argument("--taxon-set-file", dest="taxon_set_file") #must be provided if multi-tree and not fixed tree
+parser.add_argument("--taxon-set-file", dest="taxon_set_file") #must be provided if multi-tree and not fixed tree
 parser.add_argument("--predictors-dir", dest="predictors_dir")
 parser.add_argument("--chainlen", default="100000000")
 parser.add_argument("--log", default="10000")
@@ -34,11 +36,13 @@ args = parser.parse_args()
 template = args.template
 fasta_file = args.fasta
 id_file = args.id_file
+id_file_dir = args.id_file_dir
 maps = args.map_file
 traits = args.traits
 # trait_order = args.trait_order
 trait_file = args.trait_file
 # codon_partitioning = args.codon_partitioning
+cont_phylo=args.cont_phylo
 fixed_tree_file = args.fixed_tree_file
 fixed_tree_dir = args.fixed_tree_dir
 chain_length = args.chainlen
@@ -59,21 +63,34 @@ config = {} #would be nice to set this up like civet eventually - even if not de
 trait_dict = {}
 
 #######TAXA IF NO FASTA##############
-id_list = []
+
+taxa = defaultdict(list)
 if id_file:
     with open(id_file) as f:
-        data = csv.dictReader(f)
+        data = csv.DictReader(f,delimiter="\t")
         for l in data:
-            id_list.append(l["taxon"])
+            taxa["taxa"].append(l["name"])
+
+elif id_file_dir:
+    for f in os.listdir(id_file_dir):
+        if f.endswith(".csv"):
+            file_name = f.split("/")[-1].split(".")[0]
+            with open(os.path.join(id_file_dir,f)) as open_f:
+                data = csv.DictReader(open_f)
+                for l in data:
+                    taxa[file_name].append(l["name"])
+else:
+    taxa = ""
+
 
 #######DISCRETE TRAITS#########
-new_traits = []
+
 trait_locs = {}
 options_per_tree = defaultdict(dict) #trait to tree to options
 all_trait_options_prep = defaultdict(set)
 all_trait_options = defaultdict(list)
 if traits:
-    new_traits = traits.split(",")
+    traits = traits.split(",")
     for number, trait in enumerate(new_traits):
         trait_locs[trait] = int(number)
     
@@ -98,18 +115,20 @@ if traits:
 #################################
 
 ###########FIXED TREE###############
+tree_file_dict = {}
 if fixed_tree_file:
     with open(fixed_tree_file) as f:
         for l in f:
             fixed_tree = l.strip("\n").lstrip("[&R] ")
 
     tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
+    tree_file_dict[tree_name] = fixed_tree_file.split("/")[-1]
 else:
     tree_name = ""
     fixed_tree = ""
 
 newick_dict = {}
-tree_file_dict = {}
+
 if fixed_tree_dir:
     for f in os.listdir(fixed_tree_dir):
         if f.endswith(".newick") or f.endswith(".nwk") or f.endswith("tree"): #for now, will only take newick strings
@@ -138,6 +157,10 @@ if glm:
         for trait_name in new_traits:
             actual_predictor_dir = os.path.join(predictors_dir,trait)
             trait_to_predictor = glm_funcs.loop_for_processing(actual_predictor_dir, predictor_info_file, directional_predictor_file, trait_name, trait_to_predictor, all_trait_options)
+else:
+    re_matrices = False
+    bin_probs = False
+    trait_to_predictor = False
 
 
 
@@ -153,20 +176,20 @@ else:
 
 
 ###Final set up####
-config["id_list"] = id_list
+config["taxa"] = taxa
 
 #fixed tree analyses
 config["tree"] = fixed_tree
 config["tree_name"] = tree_name
 config["newick_dict"] = newick_dict
-config["tree_file_list"] = tree_file_list
+config["tree_file_dict"] = tree_file_dict
 
 ##Trait analysis
 config["trait_dict"] = trait_dict
 ##continuous trait analysis
 config["overall_trait"] = overall_trait
 ##discrete trait analysis
-config["traits"] = new_traits
+config["traits"] = traits
 config["trait_locs"] = trait_locs
 config["all_trait_options"] = all_trait_options
 ##DTA GLM

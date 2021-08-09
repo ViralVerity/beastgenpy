@@ -6,25 +6,27 @@
 
 <beast>
    <!-- The list of taxa to be analysed (can also include dates/ages).          -->
-    <!-- ntax=${len(config["id_list"])}                                             -->
-    <taxa id="taxa">
-% for sequence in id_list: 
+%for tax_set, taxa_list in config["taxa"].items():
+    <!-- ntax=${len(taxa_list)}                                             -->
+    <taxa id="taxa_${tax_set}">
+%for sequence in taxa_list: 
         <taxon id="${sequence}">
             <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
 %for trait in config["traits"]:
             <attr name="${trait}">
-                ${trait_dict[sequence][trait]]}
+                ${config["trait_dict"][sequence][trait]}
             </attr>
 %endfor
         </taxon>
 %endfor 
     </taxa> 
+%endfor
 
 %if len(config["tree_file_dict"]) > 0:
 <!-- Insert starting tree blocks -->  
-%for tree_name, tree_file in config["tree_file_dict"]:
-	<empiricalTreeDistributionModel id="treeModel_${tree_name}" fileName="${tree_file}">
-		<taxa idref="taxa"/>
+%for tree_name, tree_file in config["tree_file_dict"].items():
+	<empiricalTreeDistributionModel id="${tree_name}" fileName="${tree_file}">
+		<taxa idref="taxa_${tree_name}"/>
 	</empiricalTreeDistributionModel> 
 %endfor
 ##here add in the non-fixed tree stuff
@@ -54,12 +56,12 @@
 
 	<!-- END Multivariate diffusion model                                        -->
 
-
-%if len(config["tree_file_dict"]) > 0:
-tree_lst = config["tree_file_dict"].keys()
+<%
+if len(config["tree_file_dict"]) > 0:
+	tree_lst = config["tree_file_dict"].keys()
 else:
-tree_lst = ["treeModel"]
-%endif
+	tree_lst = ["treeModel"]
+%>
 %for tree_name in tree_lst:
 <!-- START Multivariate diffusion model                                      -->
 	<arbitraryBranchRates id="${config["overall_trait"]}.diffusion.branchRates.${tree_name}">
@@ -70,7 +72,7 @@ tree_lst = ["treeModel"]
 	</arbitraryBranchRates>
 	<distributionLikelihood id="${config["overall_trait"]}.diffusion.prior.${tree_name}">
 		<data>
-			<parameter idref="${config["overall_trait"]}.diffusion.rates"/>
+			<parameter idref="${config["overall_trait"]}.diffusion.rates.${tree_name}"/>
 		</data>
 		<distribution>
 			<onePGammaDistributionModel>
@@ -83,7 +85,7 @@ tree_lst = ["treeModel"]
 		</distribution>
 	</distributionLikelihood>
 	
-	<multivariateTraitLikelihood id="${config["overall_trait"]}.traitLikelihood.${tree_name}" traitName="{config["overall_trait"]}" useTreeLength="true" scaleByTime="true" reportAsMultivariate="true" reciprocalRates="true" integrateInternalTraits="true">
+	<multivariateTraitLikelihood id="${config["overall_trait"]}.traitLikelihood.${tree_name}" traitName="${config["overall_trait"]}" useTreeLength="true" scaleByTime="true" reportAsMultivariate="true" reciprocalRates="true" integrateInternalTraits="true">
 		<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/>
 		<treeModel idref="${tree_name}"/>
 		<traitParameter>
@@ -121,7 +123,7 @@ tree_lst = ["treeModel"]
     <operators id="operators" optimizationSchedule="log">
 %for tree_name in tree_lst:
 		<scaleOperator scaleFactor="0.75" weight="30">
-			<parameter idref="coordinates.diffusion.rates"/>
+			<parameter idref="coordinates.diffusion.rates.${tree_name}"/>
 		</scaleOperator> 
 %endfor
 		<!-- Insert precisionGibbsOperator blocks --> 
@@ -144,14 +146,14 @@ tree_lst = ["treeModel"]
             </prior>
 			<likelihood id="likelihood">
 %for tree_name in tree_lst:
-				<multivariateTraitLikelihood idref="coordinates.traitLikelihood"/>
+				<multivariateTraitLikelihood idref="coordinates.traitLikelihood.${tree_name}"/>
 %endfor
 			</likelihood>
 		</joint>
         <operators idref="operators"/>
 
     <!-- write log to screen                                                     -->
-		<log id="screenLog" logEvery="{config["log_every"]}">
+		<log id="screenLog" logEvery="${config["log_every"]}">
 			<column label="Joint" dp="4" width="12">
 				<joint idref="joint"/>
 			</column>
@@ -163,7 +165,7 @@ tree_lst = ["treeModel"]
 			</column>
 		</log>
 
-		<log id="fileLog" logEvery="${config["log_every"]", fileName="${config["file_stem"]}.log" overwrite="false">
+		<log id="fileLog" logEvery="${config["log_every"]}" fileName="${config["file_stem"]}.log" overwrite="false">
 			<joint idref="joint"/> 
 			<prior idref="prior"/> 
 			<likelihood idref="likelihood"/> 
@@ -180,8 +182,8 @@ tree_lst = ["treeModel"]
 		</log>
 
 		<!-- write tree log to file                                                  -->
-%for tree_name in tree_list:
-		<logTree id="treeFileLog1" logEvery="100000" nexusFormat="true" fileName="${tree_name}.trees" sortTranslationTable="true">
+%for tree_name in tree_lst:
+		<logTree id="treeFileLog_${tree_name}" logEvery="${config["log_every"]}" nexusFormat="true" fileName="${tree_name}.trees" sortTranslationTable="true">
 			<treeModel idref="${tree_name}"/>
 			<joint idref="joint"/> 
 			<trait name="${config["overall_trait"]}" tag="${config["overall_trait"]}"> 
@@ -195,8 +197,6 @@ tree_lst = ["treeModel"]
 %endfor
 	</mcmc>
 
-	</mcmc>
-	
 	<report>
 		<property name="timer">
 			<mcmc idref="mcmc"/>
@@ -204,26 +204,3 @@ tree_lst = ["treeModel"]
 	</report>
 	
 </beast>
-
-
-
-
-
-	 
-
-
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
