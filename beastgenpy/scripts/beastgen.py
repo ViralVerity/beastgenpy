@@ -55,8 +55,8 @@ cwd = os.getcwd()
 
 ##move all these bits to core functions or glm functions at some point. Would be nice to have different modules for different analysis types
 #realistically, a lot of this needs re-writing and re-framing. Looks like the actual functions are ok, but some of the data structures need thinking about
-config = {}
-
+config = {} #would be nice to set this up like civet eventually - even if not defaults, at least do initialise all the keys
+trait_dict = {}
 
 #######TAXA IF NO FASTA##############
 id_list = []
@@ -108,17 +108,17 @@ else:
     tree_name = ""
     fixed_tree = ""
 
-tree_dict = {}
-tree_file_list = []
+newick_dict = {}
+tree_file_dict = {}
 if fixed_tree_dir:
     for f in os.listdir(fixed_tree_dir):
         if f.endswith(".newick") or f.endswith(".nwk") or f.endswith("tree"): #for now, will only take newick strings
+            tree_name = f.split("/")[-1].split(".")[0]
             with open(os.path.join(fixed_tree_dir,f)) as open_f:
                 for l in open_f:
                     fixed_tree = l.strip("\n").lstrip("[&R] ")
-                tree_name = f.split("/")[-1].split(".")[0]
-                tree_dict[tree_name] = fixed_tree
-            tree_file_list.append(f)
+                newick_dict[tree_name] = fixed_tree
+            tree_file_dict[tree_name] = f
     tree_name = ""
 
 ################################
@@ -146,6 +146,10 @@ if cont_phylo:
     #this template should be generalised to be fixed tree or not fixed, and multi/not multi
     traits = ["longitude", "latitude", "coordinates"]
     trait_dict = core_funcs.process_coordinates(trait_file)
+    overall_trait = "coordinates"
+else:
+    overall_trait = ""
+    
 
 
 ###Final set up####
@@ -154,15 +158,17 @@ config["id_list"] = id_list
 #fixed tree analyses
 config["tree"] = fixed_tree
 config["tree_name"] = tree_name
-config["tree_dict"] = tree_dict
+config["newick_dict"] = newick_dict
 config["tree_file_list"] = tree_file_list
 
-#DTA stuff
-config["traits"] = new_traits
+##Trait analysis
 config["trait_dict"] = trait_dict
+##continuous trait analysis
+config["overall_trait"] = overall_trait
+##discrete trait analysis
+config["traits"] = new_traits
 config["trait_locs"] = trait_locs
 config["all_trait_options"] = all_trait_options
-
 ##DTA GLM
 config["trait_to_predictor"] = trait_to_predictor
 config["bin_probs"]=bin_probs

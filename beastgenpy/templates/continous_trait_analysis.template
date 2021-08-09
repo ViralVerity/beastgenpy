@@ -1,0 +1,229 @@
+<?xml version="1.0" standalone="yes"?>
+<%
+	    import core_funcs
+%> 
+<!--generated with beastgen.py-->
+
+<beast>
+   <!-- The list of taxa to be analysed (can also include dates/ages).          -->
+    <!-- ntax=${len(config["id_list"])}                                             -->
+    <taxa id="taxa">
+% for sequence in id_list: 
+        <taxon id="${sequence}">
+            <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+%for trait in config["traits"]:
+            <attr name="${trait}">
+                ${trait_dict[sequence][trait]]}
+            </attr>
+%endfor
+        </taxon>
+%endfor 
+    </taxa> 
+
+%if len(config["tree_file_dict"]) > 0:
+<!-- Insert starting tree blocks -->  
+%for tree_name, tree_file in config["tree_file_dict"]:
+	<empiricalTreeDistributionModel id="treeModel_${tree_name}" fileName="${tree_file}">
+		<taxa idref="taxa"/>
+	</empiricalTreeDistributionModel> 
+%endfor
+##here add in the non-fixed tree stuff
+%endif
+
+<!-- START Multivariate diffusion model                                      -->
+	<multivariateDiffusionModel id="${config["overall_trait"]}.diffusionModel">
+		<precisionMatrix>
+			<matrixParameter id="${config["overall_trait"]}.precision">
+				<parameter id="${config["overall_trait"]}.precision.col1" value="0.05 0.002"/>
+				<parameter id="${config["overall_trait"]}.precision.col2" value="0.002 0.05"/>
+			</matrixParameter>
+		</precisionMatrix>
+	</multivariateDiffusionModel>
+
+	<multivariateWishartPrior id="${config["overall_trait"]}.precisionPrior" df="2">
+		<scaleMatrix>
+			<matrixParameter>
+				<parameter value="1.0 0.0"/>
+				<parameter value="0.0 1.0"/>
+			</matrixParameter>
+		</scaleMatrix>
+		<data>
+			<parameter idref="${config["overall_trait"]}.precision"/>
+		</data>
+	</multivariateWishartPrior>
+
+	<!-- END Multivariate diffusion model                                        -->
+
+
+%if len(config["tree_file_dict"]) > 0:
+tree_lst = config["tree_file_dict"].keys()
+else:
+tree_lst = ["treeModel"]
+%endif
+%for tree_name in tree_lst:
+<!-- START Multivariate diffusion model                                      -->
+	<arbitraryBranchRates id="${config["overall_trait"]}.diffusion.branchRates.${tree_name}">
+		<treeModel idref="${tree_name}"/>
+		<rates>
+			<parameter id="${config["overall_trait"]}.diffusion.rates.${tree_name}" lower="0.0"/>
+		</rates>
+	</arbitraryBranchRates>
+	<distributionLikelihood id="${config["overall_trait"]}.diffusion.prior.${tree_name}">
+		<data>
+			<parameter idref="${config["overall_trait"]}.diffusion.rates"/>
+		</data>
+		<distribution>
+			<onePGammaDistributionModel>
+				<shape>
+
+					<!-- half DF (i.e., df = 1)                                                  -->
+					<parameter value="0.5"/>
+				</shape>
+			</onePGammaDistributionModel>
+		</distribution>
+	</distributionLikelihood>
+	
+	<multivariateTraitLikelihood id="${config["overall_trait"]}.traitLikelihood.${tree_name}" traitName="{config["overall_trait"]}" useTreeLength="true" scaleByTime="true" reportAsMultivariate="true" reciprocalRates="true" integrateInternalTraits="true">
+		<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/>
+		<treeModel idref="${tree_name}"/>
+		<traitParameter>
+			<parameter id="leaf.${config["overall_trait"]}.${tree_name}"/>
+		</traitParameter>
+		<conjugateRootPrior>
+			<meanParameter>
+				<parameter value="0.0 0.0"/>
+			</meanParameter>
+			<priorSampleSize>
+				<parameter value="0.000001"/>
+			</priorSampleSize>
+		</conjugateRootPrior>
+		<arbitraryBranchRates idref="${config["overall_trait"]}.diffusion.branchRates.${tree_name}"/>
+	</multivariateTraitLikelihood>
+	<continuousDiffusionStatistic id="${config["overall_trait"]}.diffusionRate.${tree_name}" greatCircleDistance="true">
+		<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood.${tree_name}"/>
+	</continuousDiffusionStatistic>
+
+%endfor
+	
+	
+	<correlation id="${config["overall_trait"]}.correlation" dimension1="1" dimension2="2">
+		<matrixParameter idref="${config["overall_trait"]}.precision"/>
+	</correlation>
+	<matrixInverse id="${config["overall_trait"]}.varCovar">
+		<matrixParameter idref="${config["overall_trait"]}.precision"/>
+	</matrixInverse>
+	
+
+	<!-- END Multivariate diffusion model                                        -->	
+	
+	
+	<!-- Define operators                                                        --> 
+    <operators id="operators" optimizationSchedule="log">
+%for tree_name in tree_lst:
+		<scaleOperator scaleFactor="0.75" weight="30">
+			<parameter idref="coordinates.diffusion.rates"/>
+		</scaleOperator> 
+%endfor
+		<!-- Insert precisionGibbsOperator blocks --> 
+		<precisionGibbsOperator weight="2">
+		%for tree_name in tree_lst:
+			<multivariateTraitLikelihood idref="coordinates.traitLikelihood.${tree_name}"/>
+		%endfor
+			<multivariateWishartPrior idref="coordinates.precisionPrior"/> 
+		</precisionGibbsOperator> 
+
+    </operators>
+    
+    <mcmc id="mcmc" chainLength="${config["chain_length"]}" autoOptimize="true">
+		<joint id="joint">
+			<prior id="prior">
+%for tree_name in tree_lst:
+				<distributionLikelihood idref="coordinates.diffusion.prior.${tree_name}"/>
+%endfor
+				<multivariateWishartPrior idref="coordinates.precisionPrior"/> 
+            </prior>
+			<likelihood id="likelihood">
+%for tree_name in tree_lst:
+				<multivariateTraitLikelihood idref="coordinates.traitLikelihood"/>
+%endfor
+			</likelihood>
+		</joint>
+        <operators idref="operators"/>
+
+    <!-- write log to screen                                                     -->
+		<log id="screenLog" logEvery="{config["log_every"]}">
+			<column label="Joint" dp="4" width="12">
+				<joint idref="joint"/>
+			</column>
+			<column label="Prior" dp="4" width="12">
+				<prior idref="prior"/>
+			</column>
+			<column label="Likelihood" dp="4" width="12">
+				<likelihood idref="likelihood"/>
+			</column>
+		</log>
+
+		<log id="fileLog" logEvery="${config["log_every"]", fileName="${config["file_stem"]}.log" overwrite="false">
+			<joint idref="joint"/> 
+			<prior idref="prior"/> 
+			<likelihood idref="likelihood"/> 
+			<!-- START Multivariate diffusion model                                      --> 
+			<matrixParameter idref="coordinates.precision"/> 
+			<correlation idref="coordinates.correlation"/> 
+			<matrixInverse idref="coordinates.varCovar"/> 
+%for tree_name in tree_lst:
+			<!-- Insert continuousDiffusionStatistic blocks 2 --> 
+				<continuousDiffusionStatistic idref="coordinates.diffusionRate.${tree_name}"/>
+			<!-- Insert multivariateTraitLikelihood blocks 2 --> 
+				<multivariateTraitLikelihood idref="coordinates.traitLikelihood.${tree_name}"/>
+%endfor
+		</log>
+
+		<!-- write tree log to file                                                  -->
+%for tree_name in tree_list:
+		<logTree id="treeFileLog1" logEvery="100000" nexusFormat="true" fileName="${tree_name}.trees" sortTranslationTable="true">
+			<treeModel idref="${tree_name}"/>
+			<joint idref="joint"/> 
+			<trait name="${config["overall_trait"]}" tag="${config["overall_trait"]}"> 
+				<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood.${tree_name}"/>
+			</trait> 
+			<multivariateDiffusionModel idref="coordinates.diffusionModel"/> 
+			<trait name="rate" tag="${config["overall_trait"]}.rate"> 
+				<arbitraryBranchRates idref="${config["overall_trait"]}.diffusion.branchRates.${tree_name}"/>
+			</trait> 
+		</logTree> 
+%endfor
+	</mcmc>
+
+	</mcmc>
+	
+	<report>
+		<property name="timer">
+			<mcmc idref="mcmc"/>
+		</property>
+	</report>
+	
+</beast>
+
+
+
+
+
+	 
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
