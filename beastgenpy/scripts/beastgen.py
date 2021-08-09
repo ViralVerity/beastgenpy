@@ -6,6 +6,7 @@ import csv
 from mako.template import Template
 from collections import defaultdict
 import glm_funcs as glm_funcs
+import core_funcs as core_funcs
 
 parser = argparse.ArgumentParser(add_help=False, description='make XML')
 
@@ -22,6 +23,7 @@ parser.add_argument("--fixed-tree-dir", dest='fixed_tree_dir')
 parser.add_argument("--glm", action="store_true")
 parser.add_argument("--predictor-info-file", dest="predictor_info_file") #list of predictors that you want logged and standardise
 parser.add_argument("--asymmetric-predictor-file", dest="asymmetric_predictor_file")
+paser.add_argument("--taxon-set-file", dest="taxon_set_file") #must be provided if multi-tree
 parser.add_argument("--predictors-dir", dest="predictors_dir")
 parser.add_argument("--chainlen", default="100000000")
 parser.add_argument("--log", default="10000")
@@ -45,6 +47,7 @@ file_stem = args.file_stem
 glm = args.glm
 predictor_info_file = args.predictor_info_file
 directional_predictor_file = args.asymmetric_predictor_file
+taxon_sets_file = args.taxon_set_file
 predictors_dir = args.predictors_dir
 
 thisdir = os.path.abspath(os.path.dirname(__file__))
@@ -62,6 +65,7 @@ if id_file:
 #######DISCRETE TRAITS#########
 new_traits = []
 trait_locs = {}
+options_per_tree = defaultdict(dict) #trait to tree to options
 all_trait_options_prep = defaultdict(set)
 all_trait_options = defaultdict(list)
 if traits:
@@ -82,6 +86,9 @@ if traits:
     for trait, options in all_trait_options_prep.items():
         new_lst = sorted(options)
         all_trait_options[trait] = new_lst
+
+    if taxon_set_file: #if multitree
+        options_per_tree = core_funcs.get_options_per_tree(trait_locs, trait_dict, taxon_set_file)
 #################################
 
 ###########FIXED TREE###############
@@ -128,6 +135,6 @@ if glm:
 
 mytemplate = Template(filename=template, strict_undefined=True)
 f = open(f"{file_stem}.xml", 'w')
-f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, trait_to_predictor=trait_to_predictor, bin_probs=bin_probs, re_matrices=re_matrices, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
+f.write(mytemplate.render(id_list=id_list, tree=fixed_tree, tree_name=tree_name, tree_dict=tree_dict, traits=new_traits, trait_dict=trait_dict, trait_locs=trait_locs, all_trait_options=all_trait_options, options_per_tree=options_per_tree, trait_to_predictor=trait_to_predictor, bin_probs=bin_probs, re_matrices=re_matrices, chain_length=chain_length, log_every=log_every, file_stem=file_stem))
 f.close()
 
