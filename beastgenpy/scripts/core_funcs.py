@@ -36,7 +36,7 @@ def process_coordinates(trait_file):
             inner_dict = {}
             inner_dict["longitude"] = l['longitude']
             inner_dict["latitude"] = l["latitude"]
-            inner_dict["coordinates"] = f"{l['longitude']} {l['latitude']}"
+            inner_dict["coordinates"] = f"{l['latitude']} {l['longitude']}"
 
             trait_dict[l['taxon']] = inner_dict
 

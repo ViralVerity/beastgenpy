@@ -167,7 +167,7 @@ else:
 #####CONTINUOUS PHYLOGEOGRAPHY####
 if cont_phylo:
     #this template should be generalised to be fixed tree or not fixed, and multi/not multi
-    traits = ["longitude", "latitude", "coordinates"]
+    traits = ["latitude", "longitude", "coordinates"]
     trait_dict = core_funcs.process_coordinates(trait_file)
     overall_trait = "coordinates"
 else:
