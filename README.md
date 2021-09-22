@@ -2,7 +2,7 @@
 
 A python package to make complicated XMLs for BEASTv1.10
 
-Broadly speaking it's to help with ones that can be difficult to make in BEAUti or aren'tt available yet eg:
+Broadly speaking it's to help with ones that can be difficult to make in BEAUti or aren't available yet eg:
 
 1. Discrete trait analysis with GLM
 2. Continuous trait analysis
