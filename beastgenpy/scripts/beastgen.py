@@ -52,7 +52,7 @@ args = parser.parse_args()
 thisdir = os.path.abspath(os.path.dirname(__file__))
 cwd = os.getcwd()
 
-config = {} #would be nice to set this up like civet eventually - even if not defaults, at least do initialise all the keys
+config = {} 
 
 config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.dta, args.glm, args.continuous_phylogeography)
 
