@@ -41,7 +41,7 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
         new_lst = sorted(options)
         all_trait_options[trait] = new_lst      
 
-    if config["multitree"]:
+    if config["multi_tree"]:
         options_per_tree = parse_multitree_traits(trait_locs, trait_dict, taxon_set_file)
     else:
         options_per_tree = ""
