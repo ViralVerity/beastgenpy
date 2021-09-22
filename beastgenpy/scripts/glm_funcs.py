@@ -8,6 +8,25 @@ import numpy as np
 import statistics
 import os
 
+def run_glm_functions(predictor_dir_input, predictor_info_file, directional_predictor_file, config):
+#make robust to cwd
+#has to have predictors dir present if glm is true
+#errors to do with the structure of the predictor dir
+
+    re_matrices = make_twoway_REmatrices(config["all_trait_options"])
+    bin_probs = calculate_binomial_likelihood(config["all_trait_options"])
+    
+    trait_to_predictor = defaultdict(dict)
+    if len(config["traits"]) == 1:
+        trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir_input, predictor_info_file, directional_predictor_file, config["traits"][0], trait_to_predictor, config["all_trait_options"])
+
+    else:
+        for trait_name in new_traits:
+            predictor_dir = os.path.join(predictor_dir_input,trait)
+            trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir, predictor_info_file, directional_predictor_file, trait_name, trait_to_predictor, config["all_trait_options"])
+
+    return trait_to_predictor, re_matrices, bin_probs
+
 def make_vector(matrix, dim):
     indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
     upper = matrix[indices] #Create matrix of top triangle
@@ -34,7 +53,7 @@ def process_info_file(info_file):
 
     return standardised_transformed_list
 
-def process_asymmetric_predictors(trait_name, predictor_file, standardised_transformed_list):
+def process_directional_predictors(trait_name, predictor_file, standardised_transformed_list):
 
     ##process folder, make sure 
     #format needs to be a column with a trait value and then one column per predictor value. Separate csvs for different traits
@@ -208,18 +227,18 @@ def standardise(dictionary):
 
     return standardised
 
-def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_name, trait_to_predictor, all_trait_options):
+def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait_name, trait_to_predictor, all_trait_options):
 
     standardised_transformed_list = process_info_file(info_file)
 
-    if actual_predictor_dir not in asymmetric_file:
-        asymmetric_file = os.path.join(actual_predictor_dict, asymmetric_file)
+    if actual_predictor_dir not in directional_file:
+        directional_file = os.path.join(actual_predictor_dict, directional_file)
     if actual_predictor_dir not in info_file:
         info_file = os.path.join(actual_predictor_dict, info_file)
 
     for f in os.listdir(actual_predictor_dir):
         pred_file = os.path.join(actual_predictor_dir, f)
-        if pred_file != info_file and pred_file != asymmetric_file and pred_file.endswith(".csv"):
+        if pred_file != info_file and pred_file != directional_file and pred_file.endswith(".csv"):
             if "/" in pred_file:
                 predictor_name = pred_file.split("/")[-1].strip(".csv")
             else:
@@ -228,7 +247,67 @@ def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_
                 trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(predictor_name, trait_name, all_trait_options[trait_name], True, pred_file)
             else:
                 trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(predictor_name, trait_name, all_trait_options[trait_name], False, pred_file)
-        elif pred_file == asymmetric_file:
-            trait_to_predictor[trait_name] = process_asymmetric_predictors(trait_name, asymmetric_file, standardised_transformed_list)
+        elif pred_file == directional_file:
+            trait_to_predictor[trait_name] = process_directional_predictors(trait_name, directional_file, standardised_transformed_list)
 
     return trait_to_predictor
+
+
+
+###These functions haven't been integrated yet but will be useful when they have###
+def pseudocount(inputfile, col_header):        
+    pc_dict = {}
+    with open(inputfile, "r") as f:
+        r = csv.DictReader(f)
+        data = [i for i in r]
+        for loc in data:
+            relevant_col = loc[col_header]
+            pc_dict[loc["adm2"]] = relevant_col+1
+            
+    return pc_dict
+
+
+def circle_distance(fw, loc1, loc2):
+    d = distance.great_circle(centroid_dict[loc1], centroid_dict[loc2]).km
+    fw.write(str(loc1) + "," + str(loc2) + "," + str(d) + '\n')
+
+def get_centroids(map_file):
+
+    locations = gp.read_file(map_file)
+
+    locations['centroids'] = locations.centroid
+
+    centroid_dict = {}
+    for place, centroid in zip(locations["NAME_2"], locations["centroids"]):
+        centroid_dict[place.upper().replace(","," ").replace(" ","_")] = ((centroid.x, centroid.y))
+
+    location_pair_dict = defaultdict(list)
+
+    for location in centroid_dict.keys():
+        for location2 in centroid_dict.keys():
+            location_pair_dict[location].append(location2)
+
+    fw = open("distance_matrix.csv", 'w')
+    for k,v in location_pair_dict.items():
+        for item in v:
+            circle_distance(fw, k, item)
+    fw.close()
+
+    return len(locations)
+
+def write_ambiguity_codes(xml_file, ambig_file):
+
+    with open(ambig_file) as f:
+        next(f)
+        for l in f:
+            toks = l.strip("\n").split(",")
+            adm2 = toks[0]
+            ambigs = toks[1].replace("|"," ")
+            xml_file.write(f'<ambiguity code="{adm2}" states="{ambigs}"/>\n')
+
+
+def random_matrix_prolif(location, position):
+    vector = np.zeros((dim,), dtype=int)
+    vector[position] = 1
+    line = '<parameter id="' + location + '_rand" value="' + str(vector) + '"/>' 
+    line.replace("[", "")
