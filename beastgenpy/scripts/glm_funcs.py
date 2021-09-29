@@ -9,7 +9,6 @@ import statistics
 import os
 
 def run_glm_functions(predictor_dir_input, predictor_info_file, directional_predictor_file, config):
-#make robust to cwd
 #has to have predictors dir present if glm is true
 #errors to do with the structure of the predictor dir
 
@@ -27,20 +26,6 @@ def run_glm_functions(predictor_dir_input, predictor_info_file, directional_pred
 
     return trait_to_predictor, re_matrices, bin_probs
 
-def make_vector(matrix, dim):
-    indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
-    upper = matrix[indices] #Create matrix of top triangle
-    lowerprep = np.transpose(matrix) #Transpose matrix, so that lower triangle will be read in the desired order
-    lower = lowerprep[indices] #Use same indices, but gets lower triangle of original matrix this time
-
-    #turn arrays into strings so there are no commas 
-    below_diag = np.array2string(lower, formatter = {'float':lambda lower: "%.1f" % lower}) 
-    above_diag = np.array2string(upper, formatter = {'float': lambda upper: "%.1f" % upper})
-
-    vector = above_diag + below_diag #make one vector that is the top triangle read horizontally, and lower triangle read vertically
-    vector = vector.replace("]["," ").replace("[","").replace("]","").replace("\n","")
-
-    return vector
 
 def process_info_file(info_file):
 
@@ -53,7 +38,7 @@ def process_info_file(info_file):
 
     return standardised_transformed_list
 
-def process_directional_predictors(trait_name, predictor_file, standardised_transformed_list):
+def process_asymmetric_predictors(trait_name, predictor_file, standardised_transformed_list):
 
     ##process folder, make sure 
     #format needs to be a column with a trait value and then one column per predictor value. Separate csvs for different traits
@@ -164,6 +149,21 @@ def process_symmetric_predictors(predictor_name, trait_name, trait_options, std_
 
     return vector
 
+def make_vector(matrix, dim):
+    indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
+    upper = matrix[indices] #Create matrix of top triangle
+    lowerprep = np.transpose(matrix) #Transpose matrix, so that lower triangle will be read in the desired order
+    lower = lowerprep[indices] #Use same indices, but gets lower triangle of original matrix this time
+
+    #turn arrays into strings so there are no commas 
+    below_diag = np.array2string(lower, formatter = {'float':lambda lower: "%.1f" % lower}) 
+    above_diag = np.array2string(upper, formatter = {'float': lambda upper: "%.1f" % upper})
+
+    vector = above_diag + below_diag #make one vector that is the top triangle read horizontally, and lower triangle read vertically
+    vector = vector.replace("]["," ").replace("[","").replace("]","").replace("\n","")
+
+    return vector
+
 
 def make_twoway_REmatrices(trait_options_dict):
 
@@ -227,12 +227,12 @@ def standardise(dictionary):
 
     return standardised
 
-def loop_for_processing(actual_predictor_dir, info_file, directional_file, trait_name, trait_to_predictor, all_trait_options):
+def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_name, trait_to_predictor, all_trait_options):
 
     standardised_transformed_list = process_info_file(info_file)
 
-    if actual_predictor_dir not in directional_file:
-        directional_file = os.path.join(actual_predictor_dict, directional_file)
+    if actual_predictor_dir not in asymmetric_file:
+        asymmetric_file = os.path.join(actual_predictor_dict, asymmetric_file)
     if actual_predictor_dir not in info_file:
         info_file = os.path.join(actual_predictor_dict, info_file)
 

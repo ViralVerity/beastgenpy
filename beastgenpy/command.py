@@ -38,8 +38,8 @@ def main(sysargs = sys.argv[1:]):
 
     trait_group.add_argument("--glm", action="store_true", help="Flag to run a generalised linear model on discrete trait predictors")
     trait_group.add_argument("--predictor-info-file", dest="predictor_info_file", help="File containing which predictors should be logged and standardised in csv format. Headers must be 'predictor' and 'logged_transformed_and_standardised'") 
-    trait_group.add_argument("--directional-predictor-file", dest="directional_predictor_file", help="File containing directional i.e. one-way predictors for a trait in csv format. Headers must be the name of the trait, and then the predictor names") 
-    trait_group.add_argument("--predictors-dir", dest="predictors_dir", help="Directory containing matrices for symmetrical predictors. Each file should have the first row and column as trait values, with the predictor value in the appropriate row/column combination.")
+    trait_group.add_argument("--asymmetric-predictor-file", dest="asymmetric_predictor_file", help="File containing asymmetric i.e. one-way predictors for a trait in csv format. Headers must be the name of the trait, and then the predictor names") 
+    trait_group.add_argument("--symmetric-predictor-dir", dest="symmetric_predictor_dir", help="Directory containing matrices for symmetrical predictors. Each file should have the first row and column as trait values, with the predictor value in the appropriate row/column combination.")
 
     trait_group.add_argument("--continuous-phylogeog", action="store_true",dest="continuous_phylogeog", help="Flag to run a continuous phylogeographic analysis")
     trait_group.add_argument("--continuous-trait-file", dest="continuous_trait_file", help="File containing coordinate values under headers 'taxon,longitude,latitude' for each sequence for continuous phylogeographic analysis")
@@ -93,9 +93,8 @@ def main(sysargs = sys.argv[1:]):
         config["options_per_tree"] = False
         
 
-
     if config["glm"]: #needs dta bool to be true
-        config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.predictor_dir_input, args.predictor_info_file, args.directional_predictor_file, config)
+        config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.predictor_dir_input, args.predictor_info_file, args.asymmetric_predictor_file, config)
     else:
         config["trait_to_predictor"] = False
         config["re_matrices"] = False
