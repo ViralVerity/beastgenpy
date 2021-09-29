@@ -4,16 +4,16 @@ import glob
 import os
 import pkg_resources
 
+from beastgenpy import __version__, _program
 
 setup(name='beastgenpy',
-      version="0.1",
+      version=__version__,
       packages=find_packages(),
       scripts=[
-            "beastgenpy/scripts/beastgen.py",
             "beastgenpy/scripts/core_funcs.py",
             "beastgenpy/scripts/glm_funcs.py",
             "beastgenpy/scripts/taxon_set_funcs.py",
-            "beastgenpy/scripts/trait_analysis_functions.py"
+            "beastgenpy/scripts/trait_analysis_funcs.py"
             ],
       install_requires=[
             "mako>=1.1",
@@ -25,7 +25,7 @@ setup(name='beastgenpy',
       entry_points="""
       [console_scripts]
       {program} = beastgenpy.command:main
-      """.format(program = "beastgenpy"),
+      """.format(program = _program),
       include_package_data=True,
       keywords=[],
       zip_safe=False)

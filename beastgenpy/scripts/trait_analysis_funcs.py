@@ -3,7 +3,7 @@ import csv
 
 
 
-def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_delimiter, config)):
+def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_delimiter, config):
 #error catching:
 #needs trait file or trait loc in name
 #with trait loc in name, needs trait delimiter in the name
