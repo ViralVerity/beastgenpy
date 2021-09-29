@@ -47,8 +47,8 @@ def main(sysargs = sys.argv[1:]):
 
     gen_group = parser.add_argument_group('General options')
     gen_group.add_argument("--template", required=True, help="Template for making the XML")
-    gen_group.add_argument("--chain-length", default="100000000", help="Number of states to run the MCMC chain for. Default=100m")
-    gen_group.add_argument("--log", default="10000", help="How often to log tree and log files. Default=10,000")
+    gen_group.add_argument("--chain-length", dest="chain_length", default="100000000", help="Number of states to run the MCMC chain for. Default=100m")
+    gen_group.add_argument("--log-every", dest="log_every", default="10000", help="How often to log tree and log files. Default=10,000")
     gen_group.add_argument("--file-stem", dest="file_stem", help="File stem for analysis")
     gen_group.add_argument("-h","--help",action="store_true",dest="help")
 
@@ -66,7 +66,9 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.dta, args.glm, args.continuous_phylogeography)
+    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.dta, args.glm, args.continuous_phylogeog)
+
+    print(config)
 
     if args.fasta:
         config["taxa"] = core_funcs.parse_fasta(args.fasta) #needs writing
@@ -102,7 +104,7 @@ def main(sysargs = sys.argv[1:]):
 
     if config["continuous_phylogeog"]:
         #this template should be generalised to be fixed tree or not fixed, and multi/not multi
-        config["traits"], config["trait_dict"], config["overall_trait"] = trait_functions.continuous_phylogeography_processing(args.continuous_trait_file)
+        config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.continuous_trait_file)
     else:
         config["overall_trait"] = False
 
@@ -113,13 +115,13 @@ def main(sysargs = sys.argv[1:]):
 
 
     ##general options
-    config["chain_length"] = chain_length
-    config["log_every"] = log_every
-    config["file_stem"] = file_stem
+    config["chain_length"] = args.chain_length
+    config["log_every"] = args.log_every
+    config["file_stem"] = args.file_stem
+    config["template"] = args.template
 
-
-    mytemplate = Template(filename=template, strict_undefined=True)
-    f = open(f"{file_stem}.xml", 'w')
+    mytemplate = Template(filename=config["template"], strict_undefined=True)
+    f = open(f"{config['file_stem']}.xml", 'w')
     f.write(mytemplate.render(config=config))
     f.close()
 
