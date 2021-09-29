@@ -1,15 +1,16 @@
 from Bio import SeqIO
 import datetime as dt
 import csv
+import os
 from collections import defaultdict
 
-def add_bools_to_config(config, multi_tree, fixed_tree, dta, glm, continuous_phylogeography):
+def add_bools_to_config(config, multi_tree, fixed_tree, dta, glm, continuous_phylogeog):
 
     config["multi_tree"] = multi_tree
     config["fixed_tree"] = fixed_tree
     config["dta"] = dta
     config["glm"] = glm
-    config["continuous_phylogeography"] = continuous_phylogeography
+    config["continuous_phylogeog"] = continuous_phylogeog
 
     return config
 
