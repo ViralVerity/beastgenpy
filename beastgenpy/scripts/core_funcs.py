@@ -26,15 +26,19 @@ def decimal_date(date_string):
     return str(final_date)
 
 
-def get_taxa_no_fasta(id_file, id_file_dir):
+def get_taxa_no_fasta(id_file, id_file_dir, fixed_tree_file, config):
 #taxa data structure needs thinking about - mostly the key
 
     taxa = defaultdict(list)
     if id_file:
+        if config["fixed_tree"]:
+            name = fixed_tree_file.split("/")[-1].split(".")[0]
+        else:
+            name = "taxa"
         with open(id_file) as f:
             data = csv.DictReader(f,delimiter="\t")
             for l in data:
-                taxa["taxa"].append(l["name"])
+                taxa[name].append(l["name"])
 
     elif id_file_dir: #for taxon sets or for multitree
         for f in os.listdir(id_file_dir):

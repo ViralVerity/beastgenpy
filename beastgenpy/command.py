@@ -74,7 +74,7 @@ def main(sysargs = sys.argv[1:]):
         config["taxa"] = core_funcs.parse_fasta(args.fasta) #needs writing
         config["fasta"] = args.fasta
     else:
-        config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir)
+        config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir, args.fixed_tree_file, config)
         config["fasta"] = False
 
     if config["fixed_tree"]:
