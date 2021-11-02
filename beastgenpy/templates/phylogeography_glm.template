@@ -17,15 +17,9 @@
             <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
 %if config["dta"]:
 %for trait in config['traits']:
-%if config['trait_dict']:
             <attr name="${trait}">
                 ${trait_dict[sequence][trait_dict[trait]]}
             </attr>
-%elif config['trait_locs']:
-            <attr name="${trait}">
-                ${sequence.split("|")[config['trait_locs'][trait]]}
-            </attr>
-%endif
 %endfor
 %endif
         </taxon>

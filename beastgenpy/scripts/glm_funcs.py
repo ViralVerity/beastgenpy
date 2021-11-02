@@ -8,7 +8,7 @@ import numpy as np
 import statistics
 import os
 
-def run_glm_functions(predictor_dir_input, predictor_info_file, directional_predictor_file, config):
+def run_glm_functions(predictor_dir_input, predictor_info_file, asymmetric_file, config):
 #has to have predictors dir present if glm is true
 #errors to do with the structure of the predictor dir
 
@@ -17,12 +17,12 @@ def run_glm_functions(predictor_dir_input, predictor_info_file, directional_pred
     
     trait_to_predictor = defaultdict(dict)
     if len(config["traits"]) == 1:
-        trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir_input, predictor_info_file, directional_predictor_file, config["traits"][0], trait_to_predictor, config["all_trait_options"])
+        trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir_input, predictor_info_file, asymmetric_file, config["traits"][0], trait_to_predictor, config["all_trait_options"])
 
     else:
-        for trait_name in new_traits:
+        for trait_name in config["traits"]:
             predictor_dir = os.path.join(predictor_dir_input,trait)
-            trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir, predictor_info_file, directional_predictor_file, trait_name, trait_to_predictor, config["all_trait_options"])
+            trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir, predictor_info_file, asymmetric_file, trait_name, trait_to_predictor, config["all_trait_options"])
 
     return trait_to_predictor, re_matrices, bin_probs
 
@@ -40,8 +40,9 @@ def process_info_file(info_file):
 
 def process_asymmetric_predictors(trait_name, predictor_file, standardised_transformed_list):
 
-    ##process folder, make sure 
-    #format needs to be a column with a trait value and then one column per predictor value. Separate csvs for different traits
+    #format needs to be a column with the trait name (e.g. district in a phylogeography) and then one column per predictor. 
+    #One csv for all the predictors of one trait.
+
     predictor_list = []
     predictor_dict = defaultdict(dict)
 
@@ -238,7 +239,7 @@ def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_
 
     for f in os.listdir(actual_predictor_dir):
         pred_file = os.path.join(actual_predictor_dir, f)
-        if pred_file != info_file and pred_file != directional_file and pred_file.endswith(".csv"):
+        if pred_file != info_file and pred_file != asymmetric_file and pred_file.endswith(".csv"):
             if "/" in pred_file:
                 predictor_name = pred_file.split("/")[-1].strip(".csv")
             else:
@@ -247,8 +248,8 @@ def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_
                 trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(predictor_name, trait_name, all_trait_options[trait_name], True, pred_file)
             else:
                 trait_to_predictor[trait_name][predictor_name] = process_symmetric_predictors(predictor_name, trait_name, all_trait_options[trait_name], False, pred_file)
-        elif pred_file == directional_file:
-            trait_to_predictor[trait_name] = process_directional_predictors(trait_name, directional_file, standardised_transformed_list)
+        elif pred_file == asymmetric_file:
+            trait_to_predictor[trait_name] = process_asymmetric_predictors(trait_name, asymmetric_file, standardised_transformed_list)
 
     return trait_to_predictor
 
