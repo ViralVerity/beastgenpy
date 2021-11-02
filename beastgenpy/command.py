@@ -18,7 +18,8 @@ def main(sysargs = sys.argv[1:]):
     parser = argparse.ArgumentParser(add_help=False, description='make XML')
 
     tax_group = parser.add_argument_group('Taxa options')
-    tax_group.add_argument("--fasta", help="fasta file containing alignment to analyse")
+    tax_group.add_argument("--fasta", help="comma separated list of fasta files containing alignment to analyse")
+    tax_group.add_argument("--codon-partitioning", "-cp", dest="codon_partitioning", help="comma separated list of 1s and 0s for which alignments have codon partitioning")
     tax_group.add_argument("--id-file", dest="id_file", help="File containing taxon IDs in csv format if no fasta file provided")
     tax_group.add_argument("--id-file-dir", dest="id_file_dir", help="Directory containing files with sets of taxon IDs in csv format")
 
@@ -28,6 +29,10 @@ def main(sysargs = sys.argv[1:]):
     tree_group.add_argument("--fixed-tree-file", dest="fixed_tree_file", help="File containing single fixed tree in newick format") 
     tree_group.add_argument("--fixed-tree-dir", dest='fixed_tree_dir', help="Directory containing multiple fixed trees in newick format")
 
+    growth_model_group = parser.add_argument_group("Growth model analysis")
+    growth_model_group.add_argument("--growth-model", dest="growth_model", default="skygrid")
+    growth_model_group.add_argument("--sg-cutoff", dest="sg_cutoff")
+    growth_model_group.add_argument("--sg-gridpoints", dest="sg_gridpoints")
 
     trait_group = parser.add_argument_group("trait_analysis_group")
     trait_group.add_argument("--dta", action="store_true", help="Flag to run a discrete trait analysis")
@@ -71,8 +76,7 @@ def main(sysargs = sys.argv[1:]):
     print(config)
 
     if args.fasta:
-        config["taxa"] = core_funcs.parse_fasta(args.fasta) #needs writing
-        config["fasta"] = args.fasta
+        config["taxa"], config["fasta"] = core_funcs.parse_fasta(args.fasta, args.codon_partitioning)
     else:
         config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir, args.fixed_tree_file, config)
         config["fasta"] = False
@@ -80,10 +84,9 @@ def main(sysargs = sys.argv[1:]):
     if config["fixed_tree"]:
         config["tree_name"], config["tree_file_dict"], config["newick_dict"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.fixed_tree_dir, config)
     else:
-        config["tree_name"] = False
+        config["tree_name"] = "tree1"
         config["tree_file_dict"] = False
         config["newick_dict"] = False
-
 
     if config["dta"]:
         config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_funcs(args.traits, args.discrete_trait_file,  args.trait_loc_in_name_input, args.trait_delimiter, config)
@@ -91,7 +94,6 @@ def main(sysargs = sys.argv[1:]):
         config["trait_index"] = False
         config["all_trait_options"] = False
         config["options_per_tree"] = False
-        
 
     if config["glm"]: #needs dta bool to be true
         config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.predictor_dir_input, args.predictor_info_file, args.asymmetric_predictor_file, config)
@@ -107,10 +109,13 @@ def main(sysargs = sys.argv[1:]):
     else:
         config["overall_trait"] = False
 
-
     if not config["continuous_phylogeog"] or config["dta"]:  
         config["traits"] = False
         config["trait_dict"] = False
+
+    if config["model"] == "skygrid":
+        config["gridpoints"] = args.sg_gridpoints
+        config["cutoff"] = args.sg_cutoff
 
 
     ##general options

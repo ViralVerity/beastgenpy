@@ -1,0 +1,791 @@
+<?xml version="1.0" standalone="yes"?>
+<%
+    import core_funcs
+%> 
+<!--generated with beastgen.py-->
+
+<beast>
+
+   <!-- The list of taxa to be analysed (can also include dates/ages).          -->
+<%if type(config["taxa"]) == list:
+	id_list = config["taxa"]
+%>
+	<!-- ntax=${len(id_list)}                                             -->
+    <taxa id="taxa">
+% for sequence in id_list: 
+        <taxon id="${sequence}">
+            <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+%if config["dta"]:
+%for trait in config['traits']:
+%if config['trait_dict']:
+            <attr name="${trait}">
+                ${trait_dict[sequence][trait_dict[trait]]}
+            </attr>
+%elif config['trait_locs']:
+            <attr name="${trait}">
+                ${sequence.split("|")[config['trait_locs'][trait]]}
+            </attr>
+%endif
+%endfor
+%endif
+        </taxon>
+%endfor 
+    </taxa> 
+
+
+%if config["fasta"]:
+%for fasta_dict in config["fasta"]:
+
+<!-- sequence alignment -->
+<alignment id="${fasta_dict['name']}" dataType="nucleotide">
+%for seq in fasta_dict["sequences"]:
+	<sequence>
+	<taxon idref="${seq.id}"/>
+	${seq.sequence}
+	</sequence>
+%endfor
+%if fasta_dict["codon_partition"]:
+%for count,cp in enumerate(["CP1", "CP2", "CP3"]):
+	<patterns id="${fasta_dict['name']}.${cp}.patterns" from="${count+1}" every="3" strip="false">
+		<alignment idref="${fasta_dict["name"]}"/>
+	</patterns>
+%endfor
+%else
+	<patterns id="${fasta_dict["name"]}.patterns" from="1" strip="false">
+		<alignment idref="${fasta_dict["name"]}"/>
+	</patterns>
+%endif
+%endfor
+%endif
+
+%if config["fixed_tree"]:
+    <newick id="${config['tree_name']}">
+    ${config['newick_dict'][tree_name]}
+    </newick>
+%else
+	<constantSize id="initialDemo" units="years">
+		<populationSize>
+			<parameter id="initialDemo.popSize" value="100.0"/>
+		</populationSize>
+	</constantSize>
+	<!-- Generate a random starting tree under the coalescent process            -->
+	<coalescentSimulator id="${config['tree_name']}"">
+		<taxa idref="taxa"/>
+		<constantSize idref="initialDemo"/>
+	</coalescentSimulator>
+%endif
+
+	<!-- Generate a tree model                                                   -->
+	<treeModel id="treeModel">
+		<coalescentTree idref="${config['tree_name']}"/>
+		<rootHeight>
+			<parameter id="treeModel.rootHeight"/>
+		</rootHeight>
+		<nodeHeights internalNodes="true">
+			<parameter id="treeModel.internalNodeHeights"/>
+		</nodeHeights>
+		<nodeHeights internalNodes="true" rootNode="true">
+			<parameter id="treeModel.allInternalNodeHeights"/>
+		</nodeHeights>
+	</treeModel>
+
+	<!-- Statistic for time of most recent common ancestor of tree               -->
+	<tmrcaStatistic id="age(root)" absolute="true">
+		<treeModel idref="treeModel"/>
+	</tmrcaStatistic>
+	<!-- Statistic for sum of the branch lengths of the tree (tree length)       -->
+	<treeLengthStatistic id="treeLength">
+		<treeModel idref="treeModel"/>
+	</treeLengthStatistic>
+
+
+%if config["growth_model"] == "skygrid"
+	<!-- Generate a gmrfSkyGridLikelihood for the Bayesian SkyGrid process       -->
+	<gmrfSkyGridLikelihood id="skygrid">
+		<populationSizes>
+
+			<!-- skygrid.logPopSize is in log units unlike other popSize                 -->
+			<parameter id="skygrid.logPopSize" dimension="${config['gridpoints']" value="1.0"/>
+		</populationSizes>
+		<precisionParameter>
+			<parameter id="skygrid.precision" value="0.1" lower="0.0"/>
+		</precisionParameter>
+		<numGridPoints>
+			<parameter id="skygrid.numGridPoints" value="${config['gridpoints']-1}.0"/>
+		</numGridPoints>
+		<cutOff>
+			<parameter id="skygrid.cutOff" value="${config['cutoff']}"/>
+		</cutOff>
+		<populationTree>
+			<treeModel idref="treeModel"/>
+		</populationTree>
+	</gmrfSkyGridLikelihood>
+%endif
+
+<!-- The uncorrelated relaxed clock (Drummond, Ho, Phillips & Rambaut (2006) PLoS Biology 4, e88 )-->
+	<discretizedBranchRates id="default.branchRates">
+		<treeModel idref="treeModel"/>
+		<distribution>
+			<logNormalDistributionModel meanInRealSpace="true">
+				<mean>
+					<parameter id="default.ucld.mean" value="1.0" lower="0.0"/>
+				</mean>
+				<stdev>
+					<parameter id="default.ucld.stdev" value="0.3333333333333333" lower="0.0"/>
+				</stdev>
+			</logNormalDistributionModel>
+		</distribution>
+		<rateCategories>
+			<parameter id="default.branchRates.categories"/>
+		</rateCategories>
+	</discretizedBranchRates>
+	
+	<rateStatistic id="default.meanRate" name="default.meanRate" mode="mean" internal="true" external="true">
+		<treeModel idref="treeModel"/>
+		<discretizedBranchRates idref="default.branchRates"/>
+	</rateStatistic>
+	
+	<rateStatistic id="default.coefficientOfVariation" name="default.coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
+		<treeModel idref="treeModel"/>
+		<discretizedBranchRates idref="default.branchRates"/>
+	</rateStatistic>
+	
+	<rateCovarianceStatistic id="default.covariance" name="default.covariance">
+		<treeModel idref="treeModel"/>
+		<discretizedBranchRates idref="default.branchRates"/>
+	</rateCovarianceStatistic>
+
+
+%if config["fasta"]:
+%for fasta_dict in config["fasta"]:
+%if fasta_dict["codon_partitioning"]:
+%for cp in ["CP1", "CP2", "CP3"]:
+
+	<HKYModel id="${fasta_dict['name']}.${cp}.hky">
+		<frequencies>
+			<frequencyModel dataType="nucleotide">
+				<frequencies>
+					<parameter id="${fasta_dict['name']}.${cp}.frequencies" value="0.25 0.25 0.25 0.25"/>
+				</frequencies>
+			</frequencyModel>
+		</frequencies>
+		<kappa>
+			<parameter id="${fasta_dict['name']}.${cp}.kappa" value="2.0" lower="0.0"/>
+		</kappa>
+	</HKYModel>
+
+
+	<!-- site model                                                              -->
+	<siteModel id="${fasta_dict['name']}.${cp}.siteModel">
+		<substitutionModel>
+			<HKYModel idref="${fasta_dict['name']}.CP1.hky"/>
+		</substitutionModel>
+		<relativeRate weight="3.9243645381277124">
+			<parameter id="${fasta_dict['name']}.${cp}.nu" value="0.25" lower="0.0" upper="1.0"/>
+		</relativeRate>
+		<gammaShape gammaCategories="4">
+			<parameter id="${fasta_dict['name']}.${cp}.alpha" value="0.5" lower="0.0"/>
+		</gammaShape>
+	</siteModel>
+
+	<!--                                                                         -->
+	<statistic id="${fasta_dict['name']}.${cp}.mu" name="mu">
+		<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
+	</statistic>
+%endfor
+%else
+		<!-- The HKY substitution model (Hasegawa, Kishino & Yano, 1985)             -->
+	<HKYModel id="${fasta_dict['name']}.hky">
+		<frequencies>
+			<frequencyModel dataType="nucleotide">
+				<frequencies>
+					<parameter id="${fasta_dict['name']}.frequencies" value="0.25 0.25 0.25 0.25"/>
+				</frequencies>
+			</frequencyModel>
+		</frequencies>
+		<kappa>
+			<parameter id="${fasta_dict['name']}.kappa" value="2.0" lower="0.0"/>
+		</kappa>
+	</HKYModel>
+
+	<!-- site model                                                              -->
+	<siteModel id="${fasta_dict['name']}.siteModel">
+		<substitutionModel>
+			<HKYModel idref="${fasta_dict['name']}.hky"/>
+		</substitutionModel>
+		<relativeRate weight="4.245472837022133">
+			<parameter id="${fasta_dict['name']}.nu" value="0.25" lower="0.0" upper="1.0"/>
+		</relativeRate>
+	</siteModel>
+
+	<!--                                                                         -->
+	<statistic id="${fasta_dict['name']}.mu" name="mu">
+		<siteModel idref="${fasta_dict['name']}.siteModel"/>
+	</statistic>
+%endif
+%endfor
+	<compoundParameter id=default.allNus"/>
+%for fasta_dict in config["fasta"]:
+%if fasta_dict["codon_partitioning"]:
+%for cp in ["CP1", "CP2", "CP3"]:
+		<parameter idref="${fasta_dict['name']}.${cp}.nu"/>
+%endfor
+%else:
+		<parameter idref"{$fasta_dict['name']}.nu"/>
+%endif
+%endfor
+	</compoundParameter>
+
+	<treeDataLikelihood id="default.treeLikelihood" useAmbiguities="false">
+%for fasta_dict in config["fasta"]:
+%if fasta_dict["codon_partitioning"]:
+%for cp in ["CP1", "CP2", "CP3"]: 
+		<partition>
+			<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
+			<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
+		</partition>
+%endfor
+%else:
+		<partition>
+			<patterns idref="${fasta_dict['name']}.patterns"/>
+			<siteModel idref="${fasta_dict['name']}.siteModel"/>
+		</partition>
+		<treeModel idref="treeModel"/>
+		<discretizedBranchRates idref="default.branchRates"/>
+	</treeDataLikelihood>
+%endfor
+%endif
+
+
+%for trait in config['traits']:
+<%  
+n_options = len(config['all_trait_options'][trait])
+n_predictors = len(config['trait_to_predictor'][trait])
+trait_rand_design = config['re_matrices'][trait]
+%>
+<!-- general data type for discrete trait model, "${trait}"                  -->
+    <generalDataType id="${trait}.dataType">
+
+    <!-- Number Of States = ${n_options}                                                  -->
+%for option in all_trait_options[trait]:
+        <state code="${option}"/>
+%endfor
+    <!-- this is where the alias and ambiguity codes come in-->
+    </generalDataType>
+
+    <!-- Data pattern for discrete trait, "${trait}"                             -->
+	<attributePatterns id="${trait}.pattern" attribute="${trait}">
+		<taxa idref="taxa"/>
+		<generalDataType idref="${trait}.dataType"/>
+	</attributePatterns>
+
+	<!-- END Discrete Traits Model                                               -->
+    <!-- Generalised Linear Model-->
+
+	<glmSubstitutionModel id="${trait}.model">
+		<dataType idref="${trait}.dataType"/>
+		<rootFrequencies>
+			<frequencyModel id="${trait}.frequencyModel" normalize="true">
+			<dataType idref="${trait}.dataType"/>
+				<frequencies>
+					<parameter id="${trait}.frequencies" dimension="${n_options}"/>
+				</frequencies>
+			</frequencyModel>
+		</rootFrequencies>
+
+		<glmModel id="${trait}.glmModel" checkFullRank="false" family="logLinear" checkIdentifiability="false">
+			<independentVariables>
+				<parameter id="${trait}.glmCoefficients" dimension="${n_predictors}" value="0.1"/> <!-- dimension is the number of predictors -->
+				<indicator>
+					<parameter id="${trait}.coefIndicator" dimension="${n_predictors}" value="1"/> <!-- dimension is the number of predictors -->
+				</indicator>
+				<designMatrix id="${trait}.designMatrix">
+
+%for predictor, values in trait_to_predictor[trait].items():
+					<parameter id="${predictor}" value="${values}" />
+%endfor
+				</designMatrix>
+			</independentVariables>
+			<independentVariables>
+				<parameter id="glmRandCoefficients_${trait}" dimension="${n_options*2}" value="0.1"/> <!-- NB I'm assuming here that it's asymmetric-->
+				<indicator>
+					<parameter id="coefRandIndicator_${trait}" dimension="${n_options*2}" value="1.0"/>
+				</indicator>
+				<designMatrix id="randDesignMatrix_${trait}" checkIdentifiability="false">
+% for to_from, rand_matrix in trait_rand_design.items():
+					<parameter id="${to_from}" value="${rand_matrix}"/>
+%endfor
+				</designMatrix>
+			</independentVariables>
+		</glmModel>
+	</glmSubstitutionModel>
+
+	<sumStatistic id="${trait}.nonZeroIndicators" name="nonZeroIndicatorCount" elementwise="true">
+		<parameter idref="${trait}.coefIndicator"/>
+	</sumStatistic>
+	<productStatistic id="${trait}.coefficientsTimesIndicators" elementwise="false">
+		<parameter idref="${trait}.glmCoefficients"/>
+		<parameter idref="${trait}.coefIndicator"/>
+	</productStatistic>
+
+	<distributionLikelihood id="${trait}_randomEffects.prior">
+		<data>
+			<parameter idref="glmRandCoefficients_${trait}"/>
+		</data>
+	    <distribution>
+    	    <normalDistributionModel>
+				<mean>
+					<parameter id="LNmeanRandEffect_${trait}" value="0.0"/>
+				</mean>
+				<precision>
+					<parameter id="LNprecRandEffect_${trait}" value="0.1"/>
+				</precision>
+	        </normalDistributionModel>
+	    </distribution>
+	</distributionLikelihood>
+
+    <gammaPrior id="gammaPrecisionRandEffectPrior_${trait}" shape="0.001" scale="1000" offset="0">
+        <parameter idref="LNprecRandEffect_${trait}"/>
+    </gammaPrior>
+
+	<sumStatistic id="nonZeroEffects_${trait}" name="nonZeroEffectCount" elementwise="true">
+		<parameter idref="coefRandIndicator_${trait}"/>
+	</sumStatistic>
+
+
+    <!-- The strict clock (Uniform rates across branches) for ${trait} rates           -->
+	<strictClockBranchRates id="${trait}.branchRates">
+		<rate>
+			<parameter id="${trait}.rate" value="1.0" lower="0.0"/>
+		</rate>
+	</strictClockBranchRates>
+
+	<siteModel id="${trait}.siteModel">
+        <substitutionModel>
+            <generalSubstitutionModel idref="${trait}.model"/>
+        </substitutionModel>
+    </siteModel>
+	
+
+	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
+		<attributePatterns idref="${trait}.pattern"/>
+		<treeModel idref="treeModel_${tree_name}"/>
+		<siteModel idref="${trait}.siteModel"/>
+		<generalSubstitutionModel idref="${trait}.model"/>
+		<strictClockBranchRates idref="${trait}.branchRates"/>
+
+		<!-- The root state frequencies                                              -->
+		<frequencyModel id="${trait}.root.frequencyModel" normalize="true">
+			<generalDataType idref="${trait}.dataType"/>
+			<frequencies>
+				<parameter id="${trait}.root.frequencies" dimension="${n_options}"/>
+			</frequencies>
+		</frequencyModel>
+
+        <!-- Ancestral state reconstruction -->
+<% 
+len_1s = (n_options**2)-2
+all_count_lst = [0.0]
+for i in range(len_1s):
+    all_count_lst.append(1.0)
+all_count_lst.append(0.0)
+all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
+%>       
+        <parameter id="${trait}.count" value="${all_count_string}"/>
+
+        <rewards>
+%for place,option in enumerate(all_trait_options[trait]):
+<% reward_trait_list = []
+for i in range(n_options):
+    if i != place:
+        reward_trait_list.append(0.0)
+    else:
+        reward_trait_list.append(1.0)
+reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
+            <parameter id="${option}_R"       value="${reward_trait_str}"/>
+%endfor%
+        </rewards>
+    </markovJumpsTreeLikelihood>
+%endfor
+
+
+
+	<!-- Define operators                                                        --> 
+    <operators id="operators" optimizationSchedule="log">
+
+%if config["fasta"]:
+%for fasta_dict in config["fasta"]:
+%if fasta_dict["codon_partitioning"]:
+%for cp in ["CP1", "CP2", "CP3"]:
+		<scaleOperator scaleFactor="0.75" weight="1">
+			<parameter idref="${fasta_dict['name']}.${cp}.kappa"/>
+		</scaleOperator>
+		<scaleOperator scaleFactor="0.75" weight="1">
+			<parameter idref="${fasta_dict['name']}.${cp}.alpha"/>
+		</scaleOperator>
+		<deltaExchange delta="0.01" weight="1">
+			<parameter idref="${fasta_dict['name']}.${cp}.frequencies"/>
+		</deltaExchange>
+%endfor
+%else:
+		<scaleOperator scaleFactor="0.75" weight="1">
+			<parameter idref="${fasta_dict['name']}.kappa"/>
+		</scaleOperator>
+		<deltaExchange delta="0.01" weight="1">
+			<parameter idref="${fasta_dict['name']}.frequencies"/>
+		</deltaExchange>	
+%endif
+%endfor
+		<deltaExchange delta="0.01" weight="3">
+			<parameter idref="default.allNus"/>
+		</deltaExchange>
+%endif
+
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="default.ucld.mean"/>
+		</scaleOperator>
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="default.ucld.stdev"/>
+		</scaleOperator>
+		<upDownOperator scaleFactor="0.75" weight="3">
+			<up>
+				<parameter idref="treeModel.allInternalNodeHeights"/>
+			</up>
+			<down>
+				<parameter idref="default.ucld.mean"/>
+			</down>
+		</upDownOperator>
+		<swapOperator size="1" weight="10" autoOptimize="false">
+			<parameter idref="default.branchRates.categories"/>
+		</swapOperator>
+		<uniformIntegerOperator weight="10">
+			<parameter idref="default.branchRates.categories"/>
+		</uniformIntegerOperator>
+
+
+		<subtreeSlide size="1.0" gaussian="true" weight="30">
+			<treeModel idref="treeModel"/>
+		</subtreeSlide>
+		<narrowExchange weight="30">
+			<treeModel idref="treeModel"/>
+		</narrowExchange>
+		<wideExchange weight="3">
+			<treeModel idref="treeModel"/>
+		</wideExchange>
+		<wilsonBalding weight="3">
+			<treeModel idref="treeModel"/>
+		</wilsonBalding>
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="treeModel.rootHeight"/>
+		</scaleOperator>
+		<uniformOperator weight="30">
+			<parameter idref="treeModel.internalNodeHeights"/>
+		</uniformOperator>
+%if config["growth_model"] == "skygrid":
+		<gmrfGridBlockUpdateOperator scaleFactor="1.0" weight="2">
+			<gmrfSkyrideLikelihood idref="skygrid"/>
+		</gmrfGridBlockUpdateOperator>
+		<scaleOperator scaleFactor="0.75" weight="1">
+			<parameter idref="skygrid.precision"/>
+		</scaleOperator>
+%endif
+
+%for trait in config['traits']:
+        <scaleOperator scaleFactor="0.75" weight="15" scaleAllIndependently="true">
+			<parameter idref="${trait}.rate"/>
+		</scaleOperator>
+		<bitFlipOperator weight="7">
+			<parameter idref="${trait}.coefIndicator"/>
+		</bitFlipOperator>
+		<deltaExchange delta="0.75" weight="1">
+			<parameter idref="${trait}.root.frequencies"/>
+		</deltaExchange>
+		<rateBitExchangeOperator weight="3" usesPriorOnSum="false">
+			<bits>
+				<parameter idref="${trait}.coefIndicator"/>
+			</bits>
+			<rates>
+				<parameter idref="${trait}.glmCoefficients"/>
+			</rates>
+		</rateBitExchangeOperator>
+		<bitMoveOperator weight="3.0" numBitsToMove="1" usesPriorOnSum="false">
+ 			<bits>
+   				<parameter idref="${trait}.coefIndicator"/>
+ 			</bits>
+		</bitMoveOperator>  
+		<randomWalkOperator windowSize="0.5" weight="1">
+			<parameter idref="${trait}.glmCoefficients"/>
+		</randomWalkOperator>
+		<mvnOperator scaleFactor="1.0" weight="10" formXtXInverse="true">
+			<parameter idref="${trait}.glmCoefficients"/>
+			<varMatrix>
+				<parameter idref="${trait}.designMatrix"/>
+			</varMatrix>
+		</mvnOperator>
+
+ 		<randomWalkOperator windowSize="0.5" weight="20">
+            <parameter idref="glmRandCoefficients_${trait}"/>
+        </randomWalkOperator>    
+
+		<normalGammaPrecisionGibbsOperator weight="12">
+			<likelihood>
+				<distributionLikelihood idref="${trait}_randomEffects.prior"/>
+			</likelihood>
+			<prior>
+				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
+			</prior>
+		</normalGammaPrecisionGibbsOperator>
+%endfor
+        </operators>
+    
+    <mcmc id="mcmc" chainLength="${chain_length}" autoOptimize="true">
+		<joint id="joint">
+			<prior id="prior">
+
+%if config["fasta"]:
+%for fasta_dict in config["fasta"]:
+%if fasta_dict["codon_partitioning"]:
+%for cp in ["CP1", "CP2", "CP3"]:
+				<logNormalPrior mu="1.0" sigma="1.25" offset="0.0">
+					<parameter idref="${fasta_dict['name']}.${cp}.kappa"/>
+				</logNormalPrior>
+				<exponentialPrior mean="0.5" offset="0.0">
+					<parameter idref="${fasta_dict['name']}.${cp}.alpha"/>
+				</exponentialPrior>
+				<dirichletPrior alpha="1.0" sumsTo="1.0">
+					<parameter idref="${fasta_dict['name']}.${cp}.frequencies"/>
+				</dirichletPrior>
+%endfor
+%else:
+				<logNormalPrior mu="1.0" sigma="1.25" offset="0.0">
+					<parameter idref="${fasta_dict['name']}.kappa"/>
+				</logNormalPrior>
+				<dirichletPrior alpha="1.0" sumsTo="1.0">
+					<parameter idref="${fasta_dict['name']}.frequencies"/>
+				</dirichletPrior>
+%endif
+%endfor
+				dirichletPrior alpha="1.0" sumsTo="1.0">
+					<parameter idref="default.allNus"/>
+				</dirichletPrior>
+%endif
+
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="default.ucld.mean"/>
+					</ctmcScale>
+					<treeModel idref="treeModel"/>
+				</ctmcScalePrior>
+				<exponentialPrior mean="0.3333333333333333" offset="0.0">
+					<parameter idref="default.ucld.stdev"/>
+				</exponentialPrior>
+
+%if config["growth_model"] == "skygrid":
+				<gmrfSkyGridLikelihood idref="skygrid"/>
+
+
+%for trait in config['traits']:
+<% n_predictors = len(config['trait_to_predictor'][trait])
+bin_prob = conifg['bin_probs'][trait]%>
+				
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="${trait}.rate"/>
+					</ctmcScale>
+					<treeModel idref="treeModel_${tree_name}"/>
+				</ctmcScalePrior>
+				<normalPrior mean="0" stdev="2">
+					<parameter idref="${trait}.glmCoefficients"/>
+				</normalPrior>
+				<binomialLikelihood>
+					<proportion>
+						<parameter value="${bin_prob}"/> <!-- the value of p that will give a 50% chance of no predictors being included -->
+					</proportion>
+					<trials>
+						<parameter dimension="${n_predictors}" value="1"/> <!-- dimension is the number of predictors -->
+					</trials>
+					<counts>
+						<parameter idref="${trait}.coefIndicator"/>
+					</counts>
+				</binomialLikelihood>
+				<distributionLikelihood idref="${trait}_randomEffects.prior"/>
+				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
+
+                <glmSubstitutionModel idref="${trait}.model"/>
+%endfor
+            </prior>
+			<likelihood id="likelihood">
+
+				<!-- START Discrete Traits Model                                             -->
+%for trait in config['traits']:
+				<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%endfor
+				<!-- END Discrete Traits Model                                               -->
+
+			</likelihood>
+		</joint>
+        <operators idref="operators"/>
+
+    <!-- write log to screen                                                     -->
+		<log id="screenLog" logEvery="10000">
+			<column label="Joint" dp="4" width="12">
+				<joint idref="joint"/>
+			</column>
+			<column label="Prior" dp="4" width="12">
+				<prior idref="prior"/>
+			</column>
+			<column label="Likelihood" dp="4" width="12">
+				<likelihood idref="likelihood"/>
+			</column>
+			<column label="age(root)" sf="6" width="12">
+				<tmrcaStatistic idref="age(root)"/>
+			</column>
+			<column label="default.ucld.mean" sf="6" width="12">
+				<parameter idref="default.ucld.mean"/>
+			</column>
+%for trait in config['traits']:
+			<column label="${trait}.rate" sf="6" width="12">
+				<parameter idref="${trait}.rate"/>
+			</column>
+
+			<!-- START Discrete Traits Model                                             -->
+			<column label="${trait}.nonZeroPredictors" sf="6" width="12">
+				<sumStatistic idref="${trait}.nonZeroIndicators"/>
+			</column>
+%endfor
+
+			<!-- END Discrete Traits Model                                               -->
+
+		</log>
+
+		<!-- write log to file                                                       -->
+		<log id="fileLog" logEvery="${log_every}" fileName="${file_stem}.log" overwrite="false">
+			<joint idref="joint"/>
+			<prior idref="prior"/>
+			<likelihood idref="likelihood"/>
+			<parameter idref="treeModel.rootHeight"/>
+			<tmrcaStatistic idref="age(root)"/>
+			<treeLengthStatistic idref="treeLength"/>
+
+%if config["growth_model"] == "skygrid":
+			<parameter idref="skygrid.precision"/>
+			<parameter idref="skygrid.logPopSize"/>
+			<parameter idref="skygrid.cutOff"/>
+			<gmrfSkyGridLikelihood idref="skygrid"/>
+
+%endif
+
+%if config["fasta"]:
+%for fasta_dict in config["fasta"]:
+%if fasta_dict["codon_partitioning"]:
+%for cp in ["CP1", "CP2", "CP3"]:
+			<parameter idref="${config['name']}.${cp}.kappa"/>
+			<parameter idref="${config['name']}.${cp}.alpha"/>
+			<parameter idref="${config['name']}.${cp}.frequencies"/>
+			<statistic idref=${config['name']}.${cp}.mu"/>
+%endfor
+%else:
+			<parameter idref="${config['name']}.kappa"/>
+			<parameter idref="${config['name']}.frequencies"/>
+			<statistic idref=${config['name']}.mu"/>
+%endif
+%endfor
+			<compoundParameter idref="default.allNus"/>
+%endif
+			<parameter idref="default.ucld.mean"/>
+			<parameter idref="default.ucld.stdev"/>
+			
+%for trait in config['traits']:
+			<distributionLikelihood idref="${trait}_randomEffects.prior"/>
+			<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
+
+			<parameter idref="${trait}.rate"/>
+			<parameter idref="${trait}.root.frequencies"/>
+
+			<!-- START Discrete Traits Model                                             -->
+			<sumStatistic idref="${trait}.nonZeroIndicators"/>
+			<parameter idref="${trait}.coefIndicator"/>
+			<parameter idref="${trait}.glmCoefficients"/>
+			<productStatistic idref="${trait}.coefficientsTimesIndicators"/>
+			<parameter idref="LNprecRandEffect_${trait}"/>
+
+			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+			<glmSubstitutionModel idref="${trait}.model"/>
+%endfor
+		</log>
+
+%for trait in config['traits']:
+		<!-- START Discrete Traits Model                                             -->
+		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="${config['log_every']}" fileName="${config['file_stem']}.${trait}.rates.log">
+			<parameter idref="${trait}.coefIndicator"/>
+			<parameter idref="${trait}.glmCoefficients"/>
+			<productStatistic idref="${trait}.coefficientsTimesIndicators"/>
+			<parameter idref="coefRandIndicator_${trait}"/>
+			<parameter idref="glmRandCoefficients_${trait}"/>
+			<glmModel idref="${trait}.glmModel"/>
+			<sumStatistic idref="${trait}.nonZeroIndicators"/>
+			<parameter idref="LNprecRandEffect_${trait}"/>
+		</log>
+%endfor
+		<!-- END Discrete Traits Model                                               -->
+
+
+		<!-- write tree log to file                                                  -->
+		<logTree id="treeFileLog" logEvery="${config['log_every']}" nexusFormat="true" fileName="${config['file_stem']}.trees" sortTranslationTable="true">
+			<treeModel idref="treeModel"/>
+            <joint idref="joint"/>
+			
+%for trait in config['traits']:
+			<!-- START Ancestral state reconstruction                                    -->
+			<trait name="${trait}.states" tag="${trait}">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
+			</trait>
+			<trait name="${trait}.count" tag="${trait}.count">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
+			</trait>
+%endfor
+		</logTree>
+
+
+		<!-- write complete history tree log to file                                 -->
+		<logTree logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.history.trees" sortTranslationTable="true">
+			<treeModel idref="treeModel"/>
+%for trait in config['traits']:
+            <markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%endfor
+		</logTree>
+
+		<!-- END Ancestral state reconstruction                                      -->
+
+	</mcmc>
+	
+	<report>
+		<property name="timer">
+			<mcmc idref="mcmc"/>
+		</property>
+	</report>
+	
+</beast>
+
+
+
+
+
+	 
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+

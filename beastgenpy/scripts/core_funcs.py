@@ -14,8 +14,6 @@ def add_bools_to_config(config, multi_tree, fixed_tree, dta, glm, continuous_phy
 
     return config
 
-
-
 def decimal_date(date_string):
 
     date = dt.datetime.strptime(date_string, "%Y-%m-%d").date()
@@ -26,6 +24,39 @@ def decimal_date(date_string):
     return str(final_date)
 
 
+def parse_fasta(fasta_list, codon_partitioning):
+
+    fastas = fasta_list.split(",")
+    cps = codon_partitioning.split(",")
+
+    taxa = []
+    for seq in SeqIO.parse(fastas[0],"fasta"):
+        taxa.append(seq.id)
+
+    fasta_info = []
+    for fasta,cp in zip(fastas, cps):
+        inner_dict = {}
+        inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
+
+        inner_dict["sequences"] = pull_sequences(fasta)
+        if cp == "1":
+            inner_dict["codon_partitioning"] = True 
+        else:
+            inner_dict["codon_partitioning"] = False
+        
+        fasta_info.append(inner_dict)
+ 
+    return taxa, fasta_info
+
+def pull_sequences(fasta):
+
+    seq_list = []
+    for seq in SeqIO.parse(fasta, 'fasta'):
+        seq_list.append(seq)
+
+    return seq_list
+
+    
 def get_taxa_no_fasta(id_file, id_file_dir, fixed_tree_file, config):
 #taxa data structure needs thinking about - mostly the key
 
@@ -81,6 +112,7 @@ def fixed_tree_parsing(fixed_tree_file, fixed_tree_dir, config):
 
         tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
         tree_file_dict[tree_name] = fixed_tree_file.split("/")[-1]
+        newick_dict[tree_name] = fixed_tree
 
     return tree_name, tree_file_dict, newick_dict
     
