@@ -40,6 +40,7 @@ def main(sysargs = sys.argv[1:]):
     trait_group.add_argument("--discrete-trait-file", dest="discrete_trait_file", help="File containing values for discrete traits, one line per sequence, in csv format")
     trait_group.add_argument("--trait-location-in-name", dest="trait_location_in_name", help="Information to pull trait value from taxon label. Should be provided as trait=position_in_name with different traits separated by commas. e.g.location=5, counting from 1")
     trait_group.add_argument("--trait-delimiter", dest="trait_delimiter", default="|", help="Separater in taxon label to pull trait value from taxon label. Default='|'")
+    trait_group.add_argument("--ambiguities", help="tsv containing ambiguities for dta with two columns: one with header 'ambiguity' and one with 'options' containing a comma separated list")
 
     trait_group.add_argument("--glm", action="store_true", help="Flag to run a generalised linear model on discrete trait predictors")
     trait_group.add_argument("--predictor-info-file", dest="predictor_info_file", help="File containing which predictors should be logged and standardised in csv format. Headers must be 'predictor' and 'logged_transformed_and_standardised'") 
@@ -89,6 +90,7 @@ def main(sysargs = sys.argv[1:]):
         config["newick_dict"] = False
 
     if config["dta"]:
+        config["ambiguities"] = trait_funcs.parse_ambiguities(args.ambiguities) #only for one trait atm
         config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_funcs(args.traits, args.discrete_trait_file,  args.trait_loc_in_name_input, args.trait_delimiter, config)
     else:
         config["trait_index"] = False

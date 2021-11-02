@@ -48,6 +48,17 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
 
     return traits, trait_index, all_trait_options, trait_dict, options_per_tree
 
+def parse_ambiguities(ambiguity_file): #currently only works for one trait
+
+    code_to_options = {}
+    with open(ambiguity_file) as f:
+        data = csv.DictReader(f, delimiter="\t")
+        for l in data:
+            code_to_options[l['ambiguity']] = " ".join(l['options'].split(","))
+
+    return code_to_options
+
+
 def parse_multitree_traits():
     options_per_tree = defaultdict(dict) #trait to tree to options
     #write this function

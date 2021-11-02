@@ -264,7 +264,11 @@ trait_rand_design = config['re_matrices'][trait]
 %for option in all_trait_options[trait]:
         <state code="${option}"/>
 %endfor
-    <!-- this is where the alias and ambiguity codes come in-->
+
+%for ambs, options in config['ambiguities'].items():
+	<ambiguity code="${ambs}" states="${options}"/>
+%endfor
+
     </generalDataType>
 
     <!-- Data pattern for discrete trait, "${trait}"                             -->
@@ -295,7 +299,7 @@ trait_rand_design = config['re_matrices'][trait]
 				</indicator>
 				<designMatrix id="${trait}.designMatrix">
 
-%for predictor, values in trait_to_predictor[trait].items():
+%for predictor, values in config['trait_to_predictor'][trait].items():
 					<parameter id="${predictor}" value="${values}" />
 %endfor
 				</designMatrix>
