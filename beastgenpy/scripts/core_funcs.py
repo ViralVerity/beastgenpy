@@ -4,7 +4,7 @@ import csv
 import os
 from collections import defaultdict
 
-def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm, continuous_phylogeog):
+def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm, epoch, continuous_phylogeog):
 
     config["multi_tree"] = multi_tree
     config["fixed_tree"] = fixed_tree
@@ -12,6 +12,7 @@ def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm,
     config["dta"] = dta
     config["glm"] = glm
     config["continuous_phylogeog"] = continuous_phylogeog
+    config["epoch"] = epoch
 
     return config
 

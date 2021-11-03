@@ -51,6 +51,8 @@ def main(sysargs = sys.argv[1:]):
     trait_group.add_argument("--predictor-info-file", dest="predictor_info_file", help="File containing which predictors should be logged and standardised in csv format. Headers must be 'predictor' and 'logged_transformed_and_standardised'") 
     trait_group.add_argument("--asymmetric-predictor-file", dest="asymmetric_predictor_file", help="File containing asymmetric i.e. one-way predictors for a trait in csv format. Headers must be the name of the trait, and then the predictor names") 
     trait_group.add_argument("--symmetric-predictor-dir", dest="symmetric_predictor_dir", help="Directory containing matrices for symmetrical predictors. Each file should have the first row and column as trait values, with the predictor value in the appropriate row/column combination.")
+    trait_group.add_argument("--epoch", action="store_true", help="flag to make it an epoch analysis")
+    trait_group.add_argument("--transition-times", dest="transition_times", help="comma separated list of values for epoch transition times in terms of years from most recent tip")
 
     trait_group.add_argument("--continuous-phylogeog", action="store_true",dest="continuous_phylogeog", help="Flag to run a continuous phylogeographic analysis")
     trait_group.add_argument("--continuous-trait-file", dest="continuous_trait_file", help="File containing coordinate values under headers 'taxon,longitude,latitude' for each sequence for continuous phylogeographic analysis")
@@ -77,7 +79,7 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.dta, args.glm, args.continuous_phylogeog)
+    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.dta, args.glm, args.epoch, args.continuous_phylogeog)
 
     print(config)
 
@@ -109,6 +111,10 @@ def main(sysargs = sys.argv[1:]):
         config["re_matrices"] = False
         config["bin_probs"] = False
 
+    if config["epoch"]:
+        config["transition_times"] = args.transition_times.split(",")
+    else:
+        config["transition_times"] = []
 
     if config["continuous_phylogeog"]:
         #this template should be generalised to be fixed tree or not fixed, and multi/not multi

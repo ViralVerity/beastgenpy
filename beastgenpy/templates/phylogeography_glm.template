@@ -288,8 +288,77 @@ trait_rand_design = config['re_matrices'][trait]
 	</attributePatterns>
 
 	<!-- END Discrete Traits Model                                               -->
-    <!-- Generalised Linear Model-->
 
+<!-- define some glm stuff -->
+%for predictor, values in config['trait_to_predictor'][trait].items():
+	<parameter id="${predictor}" value="${values}" />
+%endfor
+
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
+	<glmSubstitutionModel id="${trait}.model.${epoch_number}">
+		<dataType idref="${trait}.dataType"/>
+		<rootFrequencies>
+			<frequencyModel idref="${trait}.frequencyModel"/>
+		</rootFrequencies>
+		<glmModel id="${trait}.glmModel.${epoch_number}" family="logLinear" checkFullRank="false"  checkIdentifiability="false">
+			<independentVariables>
+				<parameter id="${trait}.glmCoefficients.${epoch_number}" dimension="${n_predictors}" value="0.1"/> <!-- dimension is the number of predictors -->
+				<indicator>
+					<parameter id="${trait}.coefIndicator.${epoch_number}" dimension="${n_predictors}" value="1"/> <!-- dimension is the number of predictors -->
+				</indicator>
+				<designMatrix id="location.designMatrix.${epoch_number}">
+%for predictor, values in config['trait_to_predictor'][trait].items():
+					<parameter idref="${predictor}"}/>
+%endfor
+				</designMatrix>
+			</independentVariables>
+		</glmModel>
+	</glmSubstitutionModel>
+
+	<sumStatistic id="${trait}.nonZeroIndicators.${epoch_number}" name="nonZeroIndicatorCount" elementwise="true">
+		<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+	</sumStatistic>
+	<productStatistic id="${trait}.coefficientsTimesIndicators.${epoch_number}" elementwise="false">
+		<parameter idref="${trait}.glmCoefficients.${epoch_number}"/>
+		<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+	</productStatistic>
+
+	<distributionLikelihood id="${trait}_randomEffects.prior.${epoch_number}">
+		<data>
+			<parameter idref="glmRandCoefficients_${trait}.${epoch_number}"/>
+		</data>
+	    <distribution>
+    	    <normalDistributionModel>
+				<mean>
+					<parameter id="LNmeanRandEffect_${trait}.${epoch_number}" value="0.0"/>
+				</mean>
+				<precision>
+					<parameter id="LNprecRandEffect_${trait}.${epoch_number}" value="0.1"/>
+				</precision>
+	        </normalDistributionModel>
+	    </distribution>
+	</distributionLikelihood>
+
+    <gammaPrior id="gammaPrecisionRandEffectPrior_${trait}.${epoch_number}" shape="0.001" scale="1000" offset="0">
+        <parameter idref="LNprecRandEffect_${trait}.${epoch_number}"/>
+    </gammaPrior>
+
+	<sumStatistic id="nonZeroEffects_${trait}.${epoch_number}" name="nonZeroEffectCount.${epoch_number}" elementwise="true">
+		<parameter idref="coefRandIndicator_${trait}.${epoch_number}"/>
+	</sumStatistic>
+%endfor	
+	<epochBranchModel id="${trait}.epochModel">
+%for epoch_number, time in enumerate((config["transition_times"])):
+		<epoch id="${trait}.${epoch_number}" transitionTime="${time}"/>
+			<glmSubstitutionModel idref = "${trait}.model.${epoch_number}"/>
+		</epoch>
+%endfor
+		<treeModel idref="treeModel"/>
+	</epochBranchModel>
+
+%else:
+	<!-- Generalised Linear Model-->
 	<glmSubstitutionModel id="${trait}.model">
 		<dataType idref="${trait}.dataType"/>
 		<rootFrequencies>
@@ -310,7 +379,7 @@ trait_rand_design = config['re_matrices'][trait]
 				<designMatrix id="${trait}.designMatrix">
 
 %for predictor, values in config['trait_to_predictor'][trait].items():
-					<parameter id="${predictor}" value="${values}" />
+					<parameter idref="${predictor}"}/>
 %endfor
 				</designMatrix>
 			</independentVariables>
@@ -359,9 +428,65 @@ trait_rand_design = config['re_matrices'][trait]
 	<sumStatistic id="nonZeroEffects_${trait}" name="nonZeroEffectCount" elementwise="true">
 		<parameter idref="coefRandIndicator_${trait}"/>
 	</sumStatistic>
+%endif
 
 
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
     <!-- The strict clock (Uniform rates across branches) for ${trait} rates           -->
+	<strictClockBranchRates id="${trait}.branchRates.${epoch_number}">
+		<rate>
+			<parameter id="${trait}.rate.${epoch_number}" value="1.0" lower="0.0"/>
+		</rate>
+	</strictClockBranchRates>
+
+	<siteModel id="${trait}.siteModel.${epoch_number}">
+        <substitutionModel>
+            <generalSubstitutionModel idref="${trait}.model.${epoch_number}"/>
+        </substitutionModel>
+    </siteModel>
+
+	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood.${epoch_number}" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
+		<attributePatterns idref="${trait}.pattern"/>
+		<treeModel idref="treeModel"/>
+		<siteModel idref="${trait}.siteModel.${epoch_number}"/>
+		<strictClockBranchRates idref="${trait}.branchRates.${epoch_number}"/>
+
+		<!-- The root state frequencies                                              -->
+		<frequencyModel id="${trait}.root.frequencyModel.${epoch_number}" normalize="true">
+			<generalDataType idref="${trait}.dataType"/> 
+			<frequencies>
+				<parameter id="${trait}.root.frequencies.${epoch_number}" dimension="${n_options}"/>
+			</frequencies>
+		</frequencyModel>
+
+        <!-- Ancestral state reconstruction -->
+<% 
+len_1s = (n_options**2)-2
+all_count_lst = [0.0]
+for i in range(len_1s):
+    all_count_lst.append(1.0)
+all_count_lst.append(0.0)
+all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
+%>       
+        <parameter id="${trait}.count.${epoch_number}" value="${all_count_string}"/>
+
+        <rewards>
+%for place,option in enumerate(config['all_trait_options'][trait]):
+<% reward_trait_list = []
+for i in range(n_options):
+    if i != place:
+        reward_trait_list.append(0.0)
+    else:
+        reward_trait_list.append(1.0)
+reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
+            <parameter id="${option}_R.${epoch_number}"       value="${reward_trait_str}"/>
+%endfor
+        </rewards>
+    </markovJumpsTreeLikelihood>
+%endfor
+
+%else:
 	<strictClockBranchRates id="${trait}.branchRates">
 		<rate>
 			<parameter id="${trait}.rate" value="1.0" lower="0.0"/>
@@ -373,7 +498,6 @@ trait_rand_design = config['re_matrices'][trait]
             <generalSubstitutionModel idref="${trait}.model"/>
         </substitutionModel>
     </siteModel>
-	
 
 	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
 		<attributePatterns idref="${trait}.pattern"/>
@@ -411,12 +535,11 @@ for i in range(n_options):
         reward_trait_list.append(1.0)
 reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]")%>
             <parameter id="${option}_R"       value="${reward_trait_str}"/>
-%endfor%
+%endfor
         </rewards>
     </markovJumpsTreeLikelihood>
+%endif
 %endfor
-
-
 
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
@@ -499,7 +622,55 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 %endif
 
 %for trait in config['traits']:
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
         <scaleOperator scaleFactor="0.75" weight="15" scaleAllIndependently="true">
+			<parameter idref="${trait}.rate.${epoch_number}"/>
+		</scaleOperator>
+		<bitFlipOperator weight="7">
+			<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+		</bitFlipOperator>
+		<deltaExchange delta="0.75" weight="1">
+			<parameter idref="${trait}.root.frequencies.${epoch_number}"/>
+		</deltaExchange>
+		<rateBitExchangeOperator weight="3" usesPriorOnSum="false">
+			<bits>
+				<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+			</bits>
+			<rates>
+				<parameter idref="${trait}.glmCoefficients.${epoch_number}"/>
+			</rates>
+		</rateBitExchangeOperator>
+		<bitMoveOperator weight="3.0" numBitsToMove="1" usesPriorOnSum="false">
+ 			<bits>
+   				<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+ 			</bits>
+		</bitMoveOperator>  
+		<randomWalkOperator windowSize="0.5" weight="1">
+			<parameter idref="${trait}.glmCoefficients.${epoch_number}"/>
+		</randomWalkOperator>
+		<mvnOperator scaleFactor="1.0" weight="10" formXtXInverse="true">
+			<parameter idref="${trait}.glmCoefficients.${epoch_number}"/>
+			<varMatrix>
+				<parameter idref="${trait}.designMatrix.${epoch_number}"/>
+			</varMatrix>
+		</mvnOperator>
+
+ 		<randomWalkOperator windowSize="0.5" weight="20">
+            <parameter idref="glmRandCoefficients_${trait}.${epoch_number}"/>
+        </randomWalkOperator>    
+
+		<normalGammaPrecisionGibbsOperator weight="12">
+			<likelihood>
+				<distributionLikelihood idref="${trait}_randomEffects.prior.${epoch_number}"/>
+			</likelihood>
+			<prior>
+				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}.${epoch_number}"/>
+			</prior>
+		</normalGammaPrecisionGibbsOperator>
+%endfor
+%else:
+		<scaleOperator scaleFactor="0.75" weight="15" scaleAllIndependently="true">
 			<parameter idref="${trait}.rate"/>
 		</scaleOperator>
 		<bitFlipOperator weight="7">
@@ -543,6 +714,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
 			</prior>
 		</normalGammaPrecisionGibbsOperator>
+%endif
 %endfor
         </operators>
     
@@ -595,7 +767,35 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 %for trait in config['traits']:
 <% n_predictors = len(config['trait_to_predictor'][trait])
 bin_prob = config['bin_probs'][trait]%>
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
 				
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="${trait}.rate.${epoch_number}"/>
+					</ctmcScale>
+					<treeModel idref="treeModel"/>
+				</ctmcScalePrior>
+				<normalPrior mean="0" stdev="2">
+					<parameter idref="${trait}.glmCoefficients.${epoch_number}"/>
+				</normalPrior>
+				<binomialLikelihood>
+					<proportion>
+						<parameter value="${bin_prob}"/> <!-- the value of p that will give a 50% chance of no predictors being included -->
+					</proportion>
+					<trials>
+						<parameter dimension="${n_predictors}" value="1"/> <!-- dimension is the number of predictors -->
+					</trials>
+					<counts>
+						<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+					</counts>
+				</binomialLikelihood>
+				<distributionLikelihood idref="${trait}_randomEffects.prior.${epoch_number}"/>
+				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}.${epoch_number}"/>
+
+                <glmSubstitutionModel idref="${trait}.model.${epoch_number}"/>
+%endfor
+%else:
 				<ctmcScalePrior>
 					<ctmcScale>
 						<parameter idref="${trait}.rate"/>
@@ -620,6 +820,7 @@ bin_prob = config['bin_probs'][trait]%>
 				<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
 
                 <glmSubstitutionModel idref="${trait}.model"/>
+%endif
 %endfor
             </prior>
 			<likelihood id="likelihood">
@@ -638,7 +839,13 @@ bin_prob = config['bin_probs'][trait]%>
 %endif
 				<discretizedBranchRates idref="default.branchRates"/>
 %for trait in config['traits']:
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
+				<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood.${epoch_number}"/>
+%endfor
+%else:
 				<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%endif
 %endfor
 				<!-- END Discrete Traits Model                                               -->
 
@@ -664,6 +871,18 @@ bin_prob = config['bin_probs'][trait]%>
 				<parameter idref="default.ucld.mean"/>
 			</column>
 %for trait in config['traits']:
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
+			<column label="${trait}.rate.${epoch_number}" sf="6" width="12">
+				<parameter idref="${trait}.rate.${epoch_number}"/>
+			</column>
+
+			<!-- START Discrete Traits Model                                             -->
+			<column label="${trait}.nonZeroPredictors.${epoch_number}" sf="6" width="12">
+				<sumStatistic idref="${trait}.nonZeroIndicators.${epoch_number}"/>
+			</column>
+%endfor
+%else:
 			<column label="${trait}.rate" sf="6" width="12">
 				<parameter idref="${trait}.rate"/>
 			</column>
@@ -672,6 +891,7 @@ bin_prob = config['bin_probs'][trait]%>
 			<column label="${trait}.nonZeroPredictors" sf="6" width="12">
 				<sumStatistic idref="${trait}.nonZeroIndicators"/>
 			</column>
+%endif
 %endfor
 
 			<!-- END Discrete Traits Model                                               -->
@@ -716,6 +936,25 @@ bin_prob = config['bin_probs'][trait]%>
 			<parameter idref="default.ucld.stdev"/>
 			
 %for trait in config['traits']:
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
+			<distributionLikelihood idref="${trait}_randomEffects.prior.${epoch_number}"/>
+			<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}.${epoch_number}"/>
+
+			<parameter idref="${trait}.rate.${epoch_number}"/>
+			<parameter idref="${trait}.root.frequencies.${epoch_number}"/>
+
+			<!-- START Discrete Traits Model                                             -->
+			<sumStatistic idref="${trait}.nonZeroIndicators.${epoch_number}"/>
+			<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+			<parameter idref="${trait}.glmCoefficients.${epoch_number}"/>
+			<productStatistic idref="${trait}.coefficientsTimesIndicators.${epoch_number}"/>
+			<parameter idref="LNprecRandEffect_${trait}.${epoch_number}"/>
+
+			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood.${epoch_number}"/>
+			<glmSubstitutionModel idref="${trait}.model.${epoch_number}"/>
+%endfor
+%else:
 			<distributionLikelihood idref="${trait}_randomEffects.prior"/>
 			<gammaPrior idref="gammaPrecisionRandEffectPrior_${trait}"/>
 
@@ -731,10 +970,26 @@ bin_prob = config['bin_probs'][trait]%>
 
 			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
 			<glmSubstitutionModel idref="${trait}.model"/>
+%endif
 %endfor
 		</log>
 
 %for trait in config['traits']:
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
+		<!-- START Discrete Traits Model                                             -->
+		<log id="${config['file_stem']}.${trait}rateMatrixLog.${epoch_number}" logEvery="${config['log_every']}" fileName="${config['file_stem']}.${trait}.rates.${epoch_number}.log">
+			<parameter idref="${trait}.coefIndicator.${epoch_number}"/>
+			<parameter idref="${trait}.glmCoefficients.${epoch_number}"/>
+			<productStatistic idref="${trait}.coefficientsTimesIndicators.${epoch_number}"/>
+			<parameter idref="coefRandIndicator_${trait}.${epoch_number}"/>
+			<parameter idref="glmRandCoefficients_${trait}.${epoch_number}"/>
+			<glmModel idref="${trait}.glmModel.${epoch_number}"/>
+			<sumStatistic idref="${trait}.nonZeroIndicators.${epoch_number}"/>
+			<parameter idref="LNprecRandEffect_${trait}.${epoch_number}"/>
+		</log>
+%endfor
+%else:
 		<!-- START Discrete Traits Model                                             -->
 		<log id="${config['file_stem']}.${trait}rateMatrixLog" logEvery="${config['log_every']}" fileName="${config['file_stem']}.${trait}.rates.log">
 			<parameter idref="${trait}.coefIndicator"/>
@@ -746,6 +1001,7 @@ bin_prob = config['bin_probs'][trait]%>
 			<sumStatistic idref="${trait}.nonZeroIndicators"/>
 			<parameter idref="LNprecRandEffect_${trait}"/>
 		</log>
+%endif
 %endfor
 		<!-- END Discrete Traits Model                                               -->
 
@@ -756,13 +1012,25 @@ bin_prob = config['bin_probs'][trait]%>
             <joint idref="joint"/>
 			
 %for trait in config['traits']:
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
 			<!-- START Ancestral state reconstruction                                    -->
+			<trait name="${trait}.states.${epoch_number}" tag="${trait}">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood.${epoch_number}"/>
+			</trait>
+			<trait name="${trait}.count.${epoch_number}" tag="${trait}.count">
+				<ancestralTreeLikelihood idref="${trait}.treeLikelihood.${epoch_number}"/>
+			</trait>
+%endfor
+%else:
+<!-- START Ancestral state reconstruction                                    -->
 			<trait name="${trait}.states" tag="${trait}">
 				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
 			</trait>
 			<trait name="${trait}.count" tag="${trait}.count">
 				<ancestralTreeLikelihood idref="${trait}.treeLikelihood"/>
 			</trait>
+%endif
 %endfor
 		</logTree>
 
@@ -771,7 +1039,13 @@ bin_prob = config['bin_probs'][trait]%>
 		<logTree logEvery="${config['log_every']}" nexusFormat="true" fileName="${config['file_stem']}.history.trees" sortTranslationTable="true">
 			<treeModel idref="treeModel"/>
 %for trait in config['traits']:
-            <markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%if config['epoch']:
+%for epoch_number in range(len(config["transition_times"])):
+            <markovJumpsTreeLikelihood idref="${trait}.treeLikelihood.${epoch_number}"/>
+%endfor
+%else:
+			<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
+%endif
 %endfor
 		</logTree>
 
