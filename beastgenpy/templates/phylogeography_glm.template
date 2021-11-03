@@ -297,9 +297,10 @@ trait_rand_design = config['re_matrices'][trait]
 %if config['epoch']:
 %for epoch_number in range(len(config["transition_times"])):
 	<glmSubstitutionModel id="${trait}.model.${epoch_number}">
+		<frequencyModel id="${trait}.frequencyModel.${epoch_number}" normalize="true">
 		<dataType idref="${trait}.dataType"/>
 		<rootFrequencies>
-			<frequencyModel idref="${trait}.frequencyModel"/>
+			<frequencyModel idref="${trait}.frequencyModel.${epoch_number}"/>
 		</rootFrequencies>
 		<glmModel id="${trait}.glmModel.${epoch_number}" family="logLinear" checkFullRank="false"  checkIdentifiability="false">
 			<independentVariables>
@@ -309,7 +310,7 @@ trait_rand_design = config['re_matrices'][trait]
 				</indicator>
 				<designMatrix id="location.designMatrix.${epoch_number}">
 %for predictor, values in config['trait_to_predictor'][trait].items():
-					<parameter idref="${predictor}"}/>
+					<parameter idref="${predictor}"/>
 %endfor
 				</designMatrix>
 			</independentVariables>
@@ -350,7 +351,7 @@ trait_rand_design = config['re_matrices'][trait]
 %endfor	
 	<epochBranchModel id="${trait}.epochModel">
 %for epoch_number, time in enumerate((config["transition_times"])):
-		<epoch id="${trait}.${epoch_number}" transitionTime="${time}"/>
+		<epoch id="${trait}.${epoch_number}" transitionTime="${time}">
 			<glmSubstitutionModel idref = "${trait}.model.${epoch_number}"/>
 		</epoch>
 %endfor
@@ -456,7 +457,7 @@ trait_rand_design = config['re_matrices'][trait]
 		<frequencyModel id="${trait}.root.frequencyModel.${epoch_number}" normalize="true">
 			<generalDataType idref="${trait}.dataType"/> 
 			<frequencies>
-				<parameter id="${trait}.root.frequencies.${epoch_number}" dimension="${n_options}"/>
+				<parameter id="${trait}.root.frequencies.${epoch_number}" dimension="${n_options}">
 			</frequencies>
 		</frequencyModel>
 
@@ -510,7 +511,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 		<frequencyModel id="${trait}.root.frequencyModel" normalize="true">
 			<generalDataType idref="${trait}.dataType"/>
 			<frequencies>
-				<parameter id="${trait}.root.frequencies" dimension="${n_options}"/>
+				<parameter id="${trait}.root.frequencies" dimension="${n_options}">
 			</frequencies>
 		</frequencyModel>
 
