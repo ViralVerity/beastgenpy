@@ -12,9 +12,14 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
     trait_index = {}
     all_trait_options_prep = defaultdict(set)
     all_trait_options = defaultdict(list)
-    trait_dict = defaultdict(list)
+    trait_dict = defaultdict(dict)
+
+    if config["ambiguities"]:
+        ambiguities = list(config["ambiguities"].keys())
+    else:
+        ambambiguities = []
     
-    traits = traits.split(",").strip(" ")
+    traits = [i.strip(" ") for i in traits.split(",")]
     for number, trait in enumerate(traits):
         trait_index[trait] = int(number)
     
@@ -24,8 +29,9 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
             for line in data:
                 name = line["sequence_name"]
                 for trait in traits:
-                    trait_dict[name].append(line[trait])
-                    all_trait_options_prep[trait].add(line[trait])
+                    trait_dict[name][trait] = line[trait]
+                    if line[trait] not in ambiguities:
+                        all_trait_options_prep[trait].add(line[trait])
     
     elif trait_loc_in_name_input:
         trait_loc_in_name = {}
@@ -34,8 +40,10 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
             trait_loc_in_name[trait] = loc
         for tax in config["taxa"]:
             for trait, loc in trait_loc_in_name.items(): 
-                trait_dict[tax].append(tax.split(trait_delimiter)[loc-1])
-                all_trait_options_prep[trait].add(tax.split(trait_delimiter)[loc-1]) 
+                value = tax.split(trait_delimiter)[loc-1]
+                trait_dict[tax].append(value)
+                if value not in ambiguities:
+                    all_trait_options_prep[trait].add(value) 
                 
     for trait, options in all_trait_options_prep.items():
         new_lst = sorted(options)
@@ -45,6 +53,8 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
         options_per_tree = parse_multitree_traits(trait_locs, trait_dict, taxon_set_file)
     else:
         options_per_tree = ""
+
+    # print(trait_dict)
 
     return traits, trait_index, all_trait_options, trait_dict, options_per_tree
 

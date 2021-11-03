@@ -4,6 +4,9 @@ import argparse
 import os
 import csv
 from mako.template import Template
+from mako.runtime import Context
+from mako.exceptions import RichTraceback
+from io import StringIO
 from collections import defaultdict
 
 import glm_funcs as glm_funcs
@@ -91,14 +94,14 @@ def main(sysargs = sys.argv[1:]):
 
     if config["dta"]:
         config["ambiguities"] = trait_funcs.parse_ambiguities(args.ambiguities) #only for one trait atm
-        config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_funcs(args.traits, args.discrete_trait_file,  args.trait_loc_in_name_input, args.trait_delimiter, config)
+        config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_traits(args.traits, args.discrete_trait_file,  args.trait_location_in_name, args.trait_delimiter, config)
     else:
         config["trait_index"] = False
         config["all_trait_options"] = False
         config["options_per_tree"] = False
 
     if config["glm"]: #needs dta bool to be true
-        config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.predictor_dir_input, args.predictor_info_file, args.asymmetric_predictor_file, config)
+        config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.symmetric_predictor_dir, args.predictor_info_file, args.asymmetric_predictor_file, config)
     else:
         config["trait_to_predictor"] = False
         config["re_matrices"] = False
@@ -111,12 +114,14 @@ def main(sysargs = sys.argv[1:]):
     else:
         config["overall_trait"] = False
 
-    if not config["continuous_phylogeog"] or config["dta"]:  
+    if not config["continuous_phylogeog"] and not config["dta"]:  
         config["traits"] = False
         config["trait_dict"] = False
 
-    if config["model"] == "skygrid":
-        config["gridpoints"] = args.sg_gridpoints
+    
+    config["growth_model"] = args.growth_model
+    if config["growth_model"] == "skygrid":
+        config["gridpoints"] = int(args.sg_gridpoints)
         config["cutoff"] = args.sg_cutoff
 
 
@@ -126,9 +131,27 @@ def main(sysargs = sys.argv[1:]):
     config["file_stem"] = args.file_stem
     config["template"] = args.template
 
+    # for k,v in config.items():
+    #     print(f'{k}: {v}')
+
     mytemplate = Template(filename=config["template"], strict_undefined=True)
+
+    buf = StringIO()
+
+    ctx = Context(buf, config=config)
+
+    try:
+        mytemplate.render_context(ctx)
+    except:
+        traceback = RichTraceback()
+        for (filename, lineno, function, line) in traceback.traceback:
+            print("File %s, line %s, in %s" % (filename, lineno, function))
+            print(line, "\n")
+        print("%s: %s" % (str(traceback.error.__class__.__name__), traceback.error))
+
     f = open(f"{config['file_stem']}.xml", 'w')
-    f.write(mytemplate.render(config=config))
+    # f.write(mytemplate.render(config=config))
+    f.write(buf.getvalue())
     f.close()
 
 

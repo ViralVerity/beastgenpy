@@ -14,11 +14,11 @@
     <taxa id="taxa">
 % for sequence in id_list: 
         <taxon id="${sequence}">
-            <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+            <date value="${core_funcs.decimal_date(sequence.split('|')[-1])}" direction="forwards" units="years"/> 
 %if config["dta"]:
 %for trait in config['traits']:
             <attr name="${trait}">
-                ${trait_dict[sequence][trait_dict[trait]]}
+                ${config['trait_dict'][sequence][trait]}
             </attr>
 %endfor
 %endif
@@ -31,22 +31,24 @@
 %for fasta_dict in config["fasta"]:
 
 <!-- sequence alignment -->
-<alignment id="${fasta_dict['name']}" dataType="nucleotide">
-%for seq in fasta_dict["sequences"]:
-	<sequence>
-	<taxon idref="${seq.id}"/>
-	${seq.sequence}
-	</sequence>
+	<alignment id="${fasta_dict['name']}" dataType="nucleotide">
+%for sequence in fasta_dict["sequences"]:
+		<sequence>
+			<taxon idref="${sequence.id}"/>
+			${sequence.seq}
+		</sequence>
 %endfor
-%if fasta_dict["codon_partition"]:
+	</alignment>
+%if fasta_dict["codon_partitioning"]:
+
 %for count,cp in enumerate(["CP1", "CP2", "CP3"]):
 	<patterns id="${fasta_dict['name']}.${cp}.patterns" from="${count+1}" every="3" strip="false">
-		<alignment idref="${fasta_dict["name"]}"/>
+		<alignment idref="${fasta_dict['name']}"/>
 	</patterns>
 %endfor
-%else
-	<patterns id="${fasta_dict["name"]}.patterns" from="1" strip="false">
-		<alignment idref="${fasta_dict["name"]}"/>
+%else:
+	<patterns id="${fasta_dict['name']}.patterns" from="1" strip="false">
+		<alignment idref="${fasta_dict['name']}"/>
 	</patterns>
 %endif
 %endfor
@@ -54,16 +56,16 @@
 
 %if config["fixed_tree"]:
     <newick id="${config['tree_name']}">
-    ${config['newick_dict'][tree_name]}
+    ${config['newick_dict'][config['tree_name']]}
     </newick>
-%else
+%else:
 	<constantSize id="initialDemo" units="years">
 		<populationSize>
 			<parameter id="initialDemo.popSize" value="100.0"/>
 		</populationSize>
 	</constantSize>
 	<!-- Generate a random starting tree under the coalescent process            -->
-	<coalescentSimulator id="${config['tree_name']}"">
+	<coalescentSimulator id="${config['tree_name']}">
 		<taxa idref="taxa"/>
 		<constantSize idref="initialDemo"/>
 	</coalescentSimulator>
@@ -93,13 +95,13 @@
 	</treeLengthStatistic>
 
 
-%if config["growth_model"] == "skygrid"
+%if config["growth_model"] == "skygrid":
 	<!-- Generate a gmrfSkyGridLikelihood for the Bayesian SkyGrid process       -->
 	<gmrfSkyGridLikelihood id="skygrid">
 		<populationSizes>
 
 			<!-- skygrid.logPopSize is in log units unlike other popSize                 -->
-			<parameter id="skygrid.logPopSize" dimension="${config['gridpoints']" value="1.0"/>
+			<parameter id="skygrid.logPopSize" dimension="${config['gridpoints']}" value="1.0"/>
 		</populationSizes>
 		<precisionParameter>
 			<parameter id="skygrid.precision" value="0.1" lower="0.0"/>
@@ -187,7 +189,7 @@
 		<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
 	</statistic>
 %endfor
-%else
+%else:
 		<!-- The HKY substitution model (Hasegawa, Kishino & Yano, 1985)             -->
 	<HKYModel id="${fasta_dict['name']}.hky">
 		<frequencies>
@@ -225,10 +227,11 @@
 		<parameter idref="${fasta_dict['name']}.${cp}.nu"/>
 %endfor
 %else:
-		<parameter idref"{$fasta_dict['name']}.nu"/>
+		<parameter idref="{$fasta_dict['name']}.nu"/>
 %endif
 %endfor
 	</compoundParameter>
+%endif
 
 	<treeDataLikelihood id="default.treeLikelihood" useAmbiguities="false">
 %for fasta_dict in config["fasta"]:
@@ -247,8 +250,8 @@
 		<treeModel idref="treeModel"/>
 		<discretizedBranchRates idref="default.branchRates"/>
 	</treeDataLikelihood>
-%endfor
 %endif
+%endfor
 
 
 %for trait in config['traits']:
@@ -261,12 +264,12 @@ trait_rand_design = config['re_matrices'][trait]
     <generalDataType id="${trait}.dataType">
 
     <!-- Number Of States = ${n_options}                                                  -->
-%for option in all_trait_options[trait]:
+%for option in config['all_trait_options'][trait]:
         <state code="${option}"/>
 %endfor
 
 %for ambs, options in config['ambiguities'].items():
-	<ambiguity code="${ambs}" states="${options}"/>
+		<ambiguity code="${ambs}" states="${options}"/>
 %endfor
 
     </generalDataType>
@@ -367,7 +370,7 @@ trait_rand_design = config['re_matrices'][trait]
 
 	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
 		<attributePatterns idref="${trait}.pattern"/>
-		<treeModel idref="treeModel_${tree_name}"/>
+		<treeModel idref="treeModel"/>
 		<siteModel idref="${trait}.siteModel"/>
 		<generalSubstitutionModel idref="${trait}.model"/>
 		<strictClockBranchRates idref="${trait}.branchRates"/>
@@ -392,7 +395,7 @@ all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
         <parameter id="${trait}.count" value="${all_count_string}"/>
 
         <rewards>
-%for place,option in enumerate(all_trait_options[trait]):
+%for place,option in enumerate(config['all_trait_options'][trait]):
 <% reward_trait_list = []
 for i in range(n_options):
     if i != place:
@@ -536,7 +539,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 %endfor
         </operators>
     
-    <mcmc id="mcmc" chainLength="${chain_length}" autoOptimize="true">
+    <mcmc id="mcmc" chainLength="${config['chain_length']}" autoOptimize="true">
 		<joint id="joint">
 			<prior id="prior">
 
@@ -563,7 +566,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 				</dirichletPrior>
 %endif
 %endfor
-				dirichletPrior alpha="1.0" sumsTo="1.0">
+				<dirichletPrior alpha="1.0" sumsTo="1.0">
 					<parameter idref="default.allNus"/>
 				</dirichletPrior>
 %endif
@@ -580,17 +583,17 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 
 %if config["growth_model"] == "skygrid":
 				<gmrfSkyGridLikelihood idref="skygrid"/>
-
+%endif
 
 %for trait in config['traits']:
 <% n_predictors = len(config['trait_to_predictor'][trait])
-bin_prob = conifg['bin_probs'][trait]%>
+bin_prob = config['bin_probs'][trait]%>
 				
 				<ctmcScalePrior>
 					<ctmcScale>
 						<parameter idref="${trait}.rate"/>
 					</ctmcScale>
-					<treeModel idref="treeModel_${tree_name}"/>
+					<treeModel idref="treeModel"/>
 				</ctmcScalePrior>
 				<normalPrior mean="0" stdev="2">
 					<parameter idref="${trait}.glmCoefficients"/>
@@ -657,7 +660,7 @@ bin_prob = conifg['bin_probs'][trait]%>
 		</log>
 
 		<!-- write log to file                                                       -->
-		<log id="fileLog" logEvery="${log_every}" fileName="${file_stem}.log" overwrite="false">
+		<log id="fileLog" logEvery="${config['log_every']}" fileName="${config['file_stem']}.log" overwrite="false">
 			<joint idref="joint"/>
 			<prior idref="prior"/>
 			<likelihood idref="likelihood"/>
@@ -677,15 +680,15 @@ bin_prob = conifg['bin_probs'][trait]%>
 %for fasta_dict in config["fasta"]:
 %if fasta_dict["codon_partitioning"]:
 %for cp in ["CP1", "CP2", "CP3"]:
-			<parameter idref="${config['name']}.${cp}.kappa"/>
-			<parameter idref="${config['name']}.${cp}.alpha"/>
-			<parameter idref="${config['name']}.${cp}.frequencies"/>
-			<statistic idref=${config['name']}.${cp}.mu"/>
+			<parameter idref="${fasta_dict['name']}.${cp}.kappa"/>
+			<parameter idref="${fasta_dict['name']}.${cp}.alpha"/>
+			<parameter idref="${fasta_dict['name']}.${cp}.frequencies"/>
+			<statistic idref="${fasta_dict['name']}.${cp}.mu"/>
 %endfor
 %else:
-			<parameter idref="${config['name']}.kappa"/>
-			<parameter idref="${config['name']}.frequencies"/>
-			<statistic idref=${config['name']}.mu"/>
+			<parameter idref="${fasta_dict['name']}.kappa"/>
+			<parameter idref="${fasta_dict['name']}.frequencies"/>
+			<statistic idref="${fasta_dict['name']}.mu"/>
 %endif
 %endfor
 			<compoundParameter idref="default.allNus"/>
@@ -714,7 +717,7 @@ bin_prob = conifg['bin_probs'][trait]%>
 
 %for trait in config['traits']:
 		<!-- START Discrete Traits Model                                             -->
-		<log id="${file_stem}.${trait}rateMatrixLog" logEvery="${config['log_every']}" fileName="${config['file_stem']}.${trait}.rates.log">
+		<log id="${config['file_stem']}.${trait}rateMatrixLog" logEvery="${config['log_every']}" fileName="${config['file_stem']}.${trait}.rates.log">
 			<parameter idref="${trait}.coefIndicator"/>
 			<parameter idref="${trait}.glmCoefficients"/>
 			<productStatistic idref="${trait}.coefficientsTimesIndicators"/>
@@ -746,7 +749,7 @@ bin_prob = conifg['bin_probs'][trait]%>
 
 
 		<!-- write complete history tree log to file                                 -->
-		<logTree logEvery="${log_every}" nexusFormat="true" fileName="${file_stem}.history.trees" sortTranslationTable="true">
+		<logTree logEvery="${config['log_every']}" nexusFormat="true" fileName="${config['file_stem']}.history.trees" sortTranslationTable="true">
 			<treeModel idref="treeModel"/>
 %for trait in config['traits']:
             <markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>

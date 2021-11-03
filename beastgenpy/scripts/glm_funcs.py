@@ -17,12 +17,12 @@ def run_glm_functions(predictor_dir_input, predictor_info_file, asymmetric_file,
     
     trait_to_predictor = defaultdict(dict)
     if len(config["traits"]) == 1:
-        trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir_input, predictor_info_file, asymmetric_file, config["traits"][0], trait_to_predictor, config["all_trait_options"])
+        trait_to_predictor = loop_for_processing(predictor_dir_input, predictor_info_file, asymmetric_file, config["traits"][0], trait_to_predictor, config["all_trait_options"])
 
     else:
         for trait_name in config["traits"]:
             predictor_dir = os.path.join(predictor_dir_input,trait)
-            trait_to_predictor = glm_funcs.loop_for_processing(predictor_dir, predictor_info_file, asymmetric_file, trait_name, trait_to_predictor, config["all_trait_options"])
+            trait_to_predictor = loop_for_processing(predictor_dir, predictor_info_file, asymmetric_file, trait_name, trait_to_predictor, config["all_trait_options"])
 
     return trait_to_predictor, re_matrices, bin_probs
 
@@ -42,6 +42,7 @@ def process_asymmetric_predictors(trait_name, predictor_file, standardised_trans
 
     #format needs to be a column with the trait name (e.g. district in a phylogeography) and then one column per predictor. 
     #One csv for all the predictors of one trait.
+    #check that there is a column with the trait name as a header
 
     predictor_list = []
     predictor_dict = defaultdict(dict)
@@ -233,9 +234,9 @@ def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_
     standardised_transformed_list = process_info_file(info_file)
 
     if actual_predictor_dir not in asymmetric_file:
-        asymmetric_file = os.path.join(actual_predictor_dict, asymmetric_file)
+        asymmetric_file = os.path.join(actual_predictor_dir, asymmetric_file)
     if actual_predictor_dir not in info_file:
-        info_file = os.path.join(actual_predictor_dict, info_file)
+        info_file = os.path.join(actual_predictor_dir, info_file)
 
     for f in os.listdir(actual_predictor_dir):
         pred_file = os.path.join(actual_predictor_dir, f)
