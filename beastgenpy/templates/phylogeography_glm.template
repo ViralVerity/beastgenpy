@@ -297,7 +297,7 @@ trait_rand_design = config['re_matrices'][trait]
 %if config['epoch']:
 %for epoch_number in range(len(config["transition_times"])):
 	<glmSubstitutionModel id="${trait}.model.${epoch_number}">
-		<frequencyModel id="${trait}.frequencyModel.${epoch_number}" normalize="true">
+		<frequencyModel id="${trait}.frequencyModel.${epoch_number}" normalize="true"/>
 		<dataType idref="${trait}.dataType"/>
 		<rootFrequencies>
 			<frequencyModel idref="${trait}.frequencyModel.${epoch_number}"/>
@@ -363,7 +363,7 @@ trait_rand_design = config['re_matrices'][trait]
 	<glmSubstitutionModel id="${trait}.model">
 		<dataType idref="${trait}.dataType"/>
 		<rootFrequencies>
-			<frequencyModel id="${trait}.frequencyModel" normalize="true">
+			<frequencyModel id="${trait}.frequencyModel" normalize="true"/>
 			<dataType idref="${trait}.dataType"/>
 				<frequencies>
 					<parameter id="${trait}.frequencies" dimension="${n_options}"/>
@@ -457,7 +457,7 @@ trait_rand_design = config['re_matrices'][trait]
 		<frequencyModel id="${trait}.root.frequencyModel.${epoch_number}" normalize="true">
 			<generalDataType idref="${trait}.dataType"/> 
 			<frequencies>
-				<parameter id="${trait}.root.frequencies.${epoch_number}" dimension="${n_options}">
+				<parameter id="${trait}.root.frequencies.${epoch_number}" dimension="${n_options}"/>
 			</frequencies>
 		</frequencyModel>
 
@@ -511,7 +511,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 		<frequencyModel id="${trait}.root.frequencyModel" normalize="true">
 			<generalDataType idref="${trait}.dataType"/>
 			<frequencies>
-				<parameter id="${trait}.root.frequencies" dimension="${n_options}">
+				<parameter id="${trait}.root.frequencies" dimension="${n_options}"/>
 			</frequencies>
 		</frequencyModel>
 
