@@ -31,6 +31,8 @@ def main(sysargs = sys.argv[1:]):
     tree_group.add_argument("--fixed-tree", action="store_true", dest="fixed_tree", help="Perform analysis on fixed tree or trees")
     tree_group.add_argument("--fixed-tree-file", dest="fixed_tree_file", help="File containing single fixed tree in newick format") 
     tree_group.add_argument("--fixed-tree-dir", dest='fixed_tree_dir', help="Directory containing multiple fixed trees in newick format")
+    tree_group.add_argument("--starting-tree", action="store_true", dest="starting_tree", help="flag for adding a starting tree")
+    tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
 
     growth_model_group = parser.add_argument_group("Growth model analysis")
     growth_model_group.add_argument("--growth-model", dest="growth_model", default="skygrid")
@@ -75,7 +77,7 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.dta, args.glm, args.continuous_phylogeog)
+    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.dta, args.glm, args.continuous_phylogeog)
 
     print(config)
 
@@ -85,8 +87,8 @@ def main(sysargs = sys.argv[1:]):
         config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir, args.fixed_tree_file, config)
         config["fasta"] = False
 
-    if config["fixed_tree"]:
-        config["tree_name"], config["tree_file_dict"], config["newick_dict"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.fixed_tree_dir, config)
+    if config["fixed_tree"] or config["starting_tree"]:
+        config["tree_name"], config["tree_file_dict"], config["newick_dict"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
     else:
         config["tree_name"] = "tree1"
         config["tree_file_dict"] = False

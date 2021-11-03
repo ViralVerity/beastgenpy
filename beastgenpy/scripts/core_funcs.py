@@ -4,10 +4,11 @@ import csv
 import os
 from collections import defaultdict
 
-def add_bools_to_config(config, multi_tree, fixed_tree, dta, glm, continuous_phylogeog):
+def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm, continuous_phylogeog):
 
     config["multi_tree"] = multi_tree
     config["fixed_tree"] = fixed_tree
+    config["starting_tree"] = starting_tree
     config["dta"] = dta
     config["glm"] = glm
     config["continuous_phylogeog"] = continuous_phylogeog
@@ -87,7 +88,7 @@ def get_taxa_no_fasta(id_file, id_file_dir, fixed_tree_file, config):
 #some kind of taxon set function
 
             
-def fixed_tree_parsing(fixed_tree_file, fixed_tree_dir, config):
+def fixed_tree_parsing(fixed_tree_file, starting_tree_file, fixed_tree_dir, config):
 #errors:
 #check dir is there if multitree
 #need one of these args if fixed tree is selected
@@ -106,13 +107,22 @@ def fixed_tree_parsing(fixed_tree_file, fixed_tree_dir, config):
         tree_name = "" #not sure why this is here
 
     else:
-        with open(fixed_tree_file) as f:
-            for l in f:
-                fixed_tree = l.strip("\n").lstrip("[&R] ")
+        if fixed_tree_file:
+            with open(fixed_tree_file) as f:
+                for l in f:
+                    tree = l.strip("\n").lstrip("[&R] ")
 
-        tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
-        tree_file_dict[tree_name] = fixed_tree_file.split("/")[-1]
-        newick_dict[tree_name] = fixed_tree
+            tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
+            tree_file_dict[tree_name] = fixed_tree_file.split("/")[-1]
+
+        elif starting_tree_file:
+            with open(starting_tree_file) as f:
+                for l in f:
+                    tree = l.strip("\n").lstrip("[&R] ")
+
+            tree_name = "starting_tree"
+
+        newick_dict[tree_name] = tree
 
     return tree_name, tree_file_dict, newick_dict
     

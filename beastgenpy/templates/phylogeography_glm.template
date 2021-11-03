@@ -64,11 +64,17 @@
 			<parameter id="initialDemo.popSize" value="100.0"/>
 		</populationSize>
 	</constantSize>
+%if config["starting_tree"]:
+	<newick id="${config['tree_name']}">
+	${config['newick_dict'][config['tree_name']]}
+	</newick>
+%else:
 	<!-- Generate a random starting tree under the coalescent process            -->
 	<coalescentSimulator id="${config['tree_name']}">
 		<taxa idref="taxa"/>
 		<constantSize idref="initialDemo"/>
 	</coalescentSimulator>
+%endif
 %endif
 
 	<!-- Generate a tree model                                                   -->
@@ -212,9 +218,6 @@
 		<relativeRate>
 			<parameter id="${fasta_dict['name']}.nu" value="0.25" lower="0.0" upper="1.0"/>
 		</relativeRate>
-		<gammaShape gammaCategories="4">
-			<parameter id="${fasta_dict['name']}.alpha" value="0.5" lower="0.0"/>
-		</gammaShape>
 	</siteModel>
 
 	<!--                                                                         -->
@@ -236,26 +239,27 @@
 	</compoundParameter>
 %endif
 
-	<treeDataLikelihood id="default.treeLikelihood" useAmbiguities="false">
+%if config['fasta']:
 %for fasta_dict in config["fasta"]:
 %if fasta_dict["codon_partitioning"]:
 %for cp in ["CP1", "CP2", "CP3"]: 
-		<partition>
-			<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
-			<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
-		</partition>
+	<treeLikelihood id="${fasta_dict['name']}.${cp}.treeLikelihood" useAmbiguities="false">
+		<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
+		<treeModel idref="treeModel"/>
+		<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
+		<discretizedBranchRates idref="default.branchRates"/>
+	</treeLikelihood>
 %endfor
 %else:
-		<partition>
-			<patterns idref="${fasta_dict['name']}.patterns"/>
-			<siteModel idref="${fasta_dict['name']}.siteModel"/>
-		</partition>
+	<treeLikelihood id="${fasta_dict['name']}.treeLikelihood" useAmbiguities="false">
+		<patterns idref="${fasta_dict['name']}.patterns"/>
 		<treeModel idref="treeModel"/>
+		<siteModel idref="${fasta_dict['name']}.siteModel"/>
 		<discretizedBranchRates idref="default.branchRates"/>
-	</treeDataLikelihood>
-%endif
+	</treeLikelihood>
+%endif 
 %endfor
-
+%endif
 
 %for trait in config['traits']:
 <%  
@@ -621,6 +625,18 @@ bin_prob = config['bin_probs'][trait]%>
 			<likelihood id="likelihood">
 
 				<!-- START Discrete Traits Model                                             -->
+%if config["fasta"]:
+%for fasta_dict in config["fasta"]:
+%if fasta_dict["codon_partitioning"]:
+%for cp in ["CP1", "CP2", "CP3"]:
+				<treeDataLikelihood	 idref="${fasta_dict['name']}.${cp}.treeLikelihood"/>
+%endfor
+%else:
+				<treeDataLikelihood	 idref="${fasta_dict['name']}.treeLikelihood"/>
+%endif
+%endfor
+%endif
+				<discretizedBranchRates idref="default.branchRates"/>
 %for trait in config['traits']:
 				<markovJumpsTreeLikelihood idref="${trait}.treeLikelihood"/>
 %endfor
