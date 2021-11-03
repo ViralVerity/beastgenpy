@@ -176,7 +176,7 @@
 		<substitutionModel>
 			<HKYModel idref="${fasta_dict['name']}.CP1.hky"/>
 		</substitutionModel>
-		<relativeRate weight="3.9243645381277124">
+		<relativeRate>
 			<parameter id="${fasta_dict['name']}.${cp}.nu" value="0.25" lower="0.0" upper="1.0"/>
 		</relativeRate>
 		<gammaShape gammaCategories="4">
@@ -209,9 +209,12 @@
 		<substitutionModel>
 			<HKYModel idref="${fasta_dict['name']}.hky"/>
 		</substitutionModel>
-		<relativeRate weight="4.245472837022133">
+		<relativeRate>
 			<parameter id="${fasta_dict['name']}.nu" value="0.25" lower="0.0" upper="1.0"/>
 		</relativeRate>
+		<gammaShape gammaCategories="4">
+			<parameter id="${fasta_dict['name']}.alpha" value="0.5" lower="0.0"/>
+		</gammaShape>
 	</siteModel>
 
 	<!--                                                                         -->
@@ -220,14 +223,14 @@
 	</statistic>
 %endif
 %endfor
-	<compoundParameter id=default.allNus"/>
+	<compoundParameter id="default.allNus">
 %for fasta_dict in config["fasta"]:
 %if fasta_dict["codon_partitioning"]:
 %for cp in ["CP1", "CP2", "CP3"]:
 		<parameter idref="${fasta_dict['name']}.${cp}.nu"/>
 %endfor
 %else:
-		<parameter idref="{$fasta_dict['name']}.nu"/>
+		<parameter idref="${fasta_dict['name']}.nu"/>
 %endif
 %endfor
 	</compoundParameter>
