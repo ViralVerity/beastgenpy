@@ -297,10 +297,14 @@ trait_rand_design = config['re_matrices'][trait]
 %if config['epoch']:
 %for epoch_number in range(len(config["transition_times"])):
 	<glmSubstitutionModel id="${trait}.model.${epoch_number}">
-		<frequencyModel id="${trait}.frequencyModel.${epoch_number}" normalize="true"/>
 		<dataType idref="${trait}.dataType"/>
 		<rootFrequencies>
-			<frequencyModel idref="${trait}.frequencyModel.${epoch_number}"/>
+			<frequencyModel id="${trait}.frequencyModel.${epoch_number}" normalize="true">
+			<dataType idref="${trait}.dataType"/>
+				<frequencies>
+					<parameter id="${trait}.frequencies.${epoch_number}" dimension="${n_options}"/>
+				</frequencies>
+			</frequencyModel>		
 		</rootFrequencies>
 		<glmModel id="${trait}.glmModel.${epoch_number}" family="logLinear" checkFullRank="false"  checkIdentifiability="false">
 			<independentVariables>
@@ -308,9 +312,20 @@ trait_rand_design = config['re_matrices'][trait]
 				<indicator>
 					<parameter id="${trait}.coefIndicator.${epoch_number}" dimension="${n_predictors}" value="1"/> <!-- dimension is the number of predictors -->
 				</indicator>
-				<designMatrix id="location.designMatrix.${epoch_number}">
+				<designMatrix id="${trait}.designMatrix.${epoch_number}">
 %for predictor, values in config['trait_to_predictor'][trait].items():
 					<parameter idref="${predictor}"/>
+%endfor
+				</designMatrix>
+			</independentVariables>
+			<independentVariables>
+				<parameter id="glmRandCoefficients_${trait}.${epoch_number}" dimension="${n_options*2}" value="0.1"/> <!-- NB I'm assuming here that it's asymmetric-->
+				<indicator>
+					<parameter id="coefRandIndicator_${trait}.${epoch_number}" dimension="${n_options*2}" value="1.0"/>
+				</indicator>
+				<designMatrix id="randDesignMatrix_${trait}.${epoch_number}" checkIdentifiability="false">
+% for to_from, rand_matrix in trait_rand_design.items():
+					<parameter id="${to_from}.${epoch_number}" value="${rand_matrix}"/>
 %endfor
 				</designMatrix>
 			</independentVariables>
@@ -351,12 +366,23 @@ trait_rand_design = config['re_matrices'][trait]
 %endfor	
 	<epochBranchModel id="${trait}.epochModel">
 %for epoch_number, time in enumerate((config["transition_times"])):
+%if time != "end":
 		<epoch id="${trait}.${epoch_number}" transitionTime="${time}">
 			<glmSubstitutionModel idref = "${trait}.model.${epoch_number}"/>
 		</epoch>
+%else:
+		 <glmSubstitutionModel idref="${trait}.model.${epoch_number}"/>
+%endif
 %endfor
 		<treeModel idref="treeModel"/>
 	</epochBranchModel>
+
+	<siteModel id="${trait}.siteModel">
+		<branchSubstitutionModel> 
+             <epochBranchModel idref="${trait}.epochModel"/>
+		</branchSubstitutionModel> 
+	</siteModel>
+
 
 %else:
 	<!-- Generalised Linear Model-->
@@ -441,16 +467,11 @@ trait_rand_design = config['re_matrices'][trait]
 		</rate>
 	</strictClockBranchRates>
 
-	<siteModel id="${trait}.siteModel.${epoch_number}">
-        <substitutionModel>
-            <generalSubstitutionModel idref="${trait}.model.${epoch_number}"/>
-        </substitutionModel>
-    </siteModel>
-
-	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood.${epoch_number}" stateTagName="${trait}.states" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
+	<markovJumpsTreeLikelihood id="${trait}.treeLikelihood.${epoch_number}" stateTagName="${trait}.states.${epoch_number}" useUniformization="true" saveCompleteHistory="true" logCompleteHistory="true">
 		<attributePatterns idref="${trait}.pattern"/>
 		<treeModel idref="treeModel"/>
-		<siteModel idref="${trait}.siteModel.${epoch_number}"/>
+		<siteModel idref="${trait}.siteModel"/>
+		<glmSubstitutionModel idref="${trait}.model.${epoch_number}"/>
 		<strictClockBranchRates idref="${trait}.branchRates.${epoch_number}"/>
 
 		<!-- The root state frequencies                                              -->
