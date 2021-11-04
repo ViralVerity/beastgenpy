@@ -389,8 +389,8 @@ trait_rand_design = config['re_matrices'][trait]
 	<glmSubstitutionModel id="${trait}.model">
 		<dataType idref="${trait}.dataType"/>
 		<rootFrequencies>
-			<frequencyModel id="${trait}.frequencyModel" normalize="true"/>
-			<dataType idref="${trait}.dataType"/>
+			<frequencyModel id="${trait}.frequencyModel" normalize="true">
+				<dataType idref="${trait}.dataType"/>
 				<frequencies>
 					<parameter id="${trait}.frequencies" dimension="${n_options}"/>
 				</frequencies>
@@ -406,7 +406,7 @@ trait_rand_design = config['re_matrices'][trait]
 				<designMatrix id="${trait}.designMatrix">
 
 %for predictor, values in config['trait_to_predictor'][trait].items():
-					<parameter idref="${predictor}"}/>
+					<parameter idref="${predictor}"/>
 %endfor
 				</designMatrix>
 			</independentVariables>
@@ -784,6 +784,9 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 
 %if config["growth_model"] == "skygrid":
 				<gmrfSkyGridLikelihood idref="skygrid"/>
+				<gammaPrior shape="0.001" scale="1000.0" offset="0.0">
+					<parameter idref="skygrid.precision"/>
+				</gammaPrior>
 %endif
 
 %for trait in config['traits']:
