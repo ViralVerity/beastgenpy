@@ -253,14 +253,14 @@
 %endfor
 %else:
 		<partition>
-			<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
-			<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
+			<patterns idref="${fasta_dict['name']}.patterns"/>
+			<siteModel idref="${fasta_dict['name']}.siteModel"/>
 		</partition>
 %endif 
 %endfor
 
 		<treeModel idref="treeModel"/>
-		<strictClockBranchRates idref="branchRates"/>
+		<strictClockBranchRates idref="default.branchRates"/>
 	</treeDataLikelihood>
 %endif
 
@@ -855,15 +855,7 @@ bin_prob = config['bin_probs'][trait]%>
 
 				<!-- START Discrete Traits Model                                             -->
 %if config["fasta"]:
-%for fasta_dict in config["fasta"]:
-%if fasta_dict["codon_partitioning"]:
-%for cp in ["CP1", "CP2", "CP3"]:
-				<treeDataLikelihood	 idref="${fasta_dict['name']}.${cp}.treeLikelihood"/>
-%endfor
-%else:
-				<treeDataLikelihood	 idref="${fasta_dict['name']}.treeLikelihood"/>
-%endif
-%endfor
+				<treeDataLikelihood idref="treeLikelihood"/>
 %endif
 				<discretizedBranchRates idref="default.branchRates"/>
 %for trait in config['traits']:
