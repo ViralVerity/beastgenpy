@@ -61,7 +61,7 @@
 %else:
 	<constantSize id="initialDemo" units="years">
 		<populationSize>
-			<parameter id="initialDemo.popSize" value="100.0"/>
+			<parameter id="initialDemo.popSize" value="1.0"/>
 		</populationSize>
 	</constantSize>
 %if config["starting_tree"]:
@@ -130,7 +130,7 @@
 		<distribution>
 			<logNormalDistributionModel meanInRealSpace="true">
 				<mean>
-					<parameter id="default.ucld.mean" value="1.0" lower="0.0"/>
+					<parameter id="default.ucld.mean" value="0.001" lower="0.0"/>
 				</mean>
 				<stdev>
 					<parameter id="default.ucld.stdev" value="0.3333333333333333" lower="0.0"/>
@@ -240,25 +240,28 @@
 %endif
 
 %if config['fasta']:
+	<treeDataLikelihood id="treeLikelihood" useAmbiguities="false">
 %for fasta_dict in config["fasta"]:
 %if fasta_dict["codon_partitioning"]:
 %for cp in ["CP1", "CP2", "CP3"]: 
-	<treeLikelihood id="${fasta_dict['name']}.${cp}.treeLikelihood" useAmbiguities="false">
-		<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
-		<treeModel idref="treeModel"/>
-		<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
-		<discretizedBranchRates idref="default.branchRates"/>
-	</treeLikelihood>
+
+		<partition>
+			<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
+			<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
+		</partition>
+
 %endfor
 %else:
-	<treeLikelihood id="${fasta_dict['name']}.treeLikelihood" useAmbiguities="false">
-		<patterns idref="${fasta_dict['name']}.patterns"/>
-		<treeModel idref="treeModel"/>
-		<siteModel idref="${fasta_dict['name']}.siteModel"/>
-		<discretizedBranchRates idref="default.branchRates"/>
-	</treeLikelihood>
+		<partition>
+			<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
+			<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
+		</partition>
 %endif 
 %endfor
+
+		<treeModel idref="treeModel"/>
+		<strictClockBranchRates idref="branchRates"/>
+	</treeDataLikelihood>
 %endif
 
 %for trait in config['traits']:

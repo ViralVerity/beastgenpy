@@ -92,8 +92,8 @@ def process_asymmetric_predictors(trait_name, predictor_file, standardised_trans
             frommatrix[i,:] = option
             tomatrix[:,i] = option
         
-        from_value = make_vector(frommatrix, dim)  
-        to_value = make_vector(tomatrix,dim)
+        from_value = make_vector(frommatrix, dim, 10)  
+        to_value = make_vector(tomatrix,dim,10)
 
         matrix_dict[key_from] = from_value
         matrix_dict[key_to] = to_value
@@ -147,19 +147,19 @@ def process_symmetric_predictors(predictor_name, trait_name, trait_options, std_
 
         matrix[location_1, location_2] = value
 
-    vector = make_vector(matrix, dim)
+    vector = make_vector(matrix, dim, 10)
 
     return vector
 
-def make_vector(matrix, dim):
+def make_vector(matrix, dim, dec_places):
     indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
     upper = matrix[indices] #Create matrix of top triangle
     lowerprep = np.transpose(matrix) #Transpose matrix, so that lower triangle will be read in the desired order
     lower = lowerprep[indices] #Use same indices, but gets lower triangle of original matrix this time
 
     #turn arrays into strings so there are no commas 
-    below_diag = np.array2string(lower, formatter = {'float':lambda lower: "%.1f" % lower}) 
-    above_diag = np.array2string(upper, formatter = {'float': lambda upper: "%.1f" % upper})
+    below_diag = np.array2string(lower, formatter = {'float':lambda lower: f"%.{dec_places}f" % lower}) 
+    above_diag = np.array2string(upper, formatter = {'float': lambda upper: f"%.{dec_places}f" % upper})
 
     vector = above_diag + below_diag #make one vector that is the top triangle read horizontally, and lower triangle read vertically
     vector = vector.replace("]["," ").replace("[","").replace("]","").replace("\n","")
@@ -199,8 +199,8 @@ def make_twoway_REmatrices(trait_options_dict):
                 tomatrix[:,i-1] = 0.0
                 tomatrix[i,i] = 0.0
  
-            trait_rand_design[key_from] = make_vector(frommatrix, dim)
-            trait_rand_design[key_to] = make_vector(tomatrix,dim)
+            trait_rand_design[key_from] = make_vector(frommatrix, dim, 1)
+            trait_rand_design[key_to] = make_vector(tomatrix,dim, 1)
 
         re_matrices[trait] = trait_rand_design
 
@@ -296,16 +296,6 @@ def get_centroids(map_file):
     fw.close()
 
     return len(locations)
-
-def write_ambiguity_codes(xml_file, ambig_file):
-
-    with open(ambig_file) as f:
-        next(f)
-        for l in f:
-            toks = l.strip("\n").split(",")
-            adm2 = toks[0]
-            ambigs = toks[1].replace("|"," ")
-            xml_file.write(f'<ambiguity code="{adm2}" states="{ambigs}"/>\n')
 
 
 def random_matrix_prolif(location, position):
