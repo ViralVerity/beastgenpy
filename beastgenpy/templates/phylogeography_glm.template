@@ -218,6 +218,9 @@
 		<relativeRate>
 			<parameter id="${fasta_dict['name']}.nu" value="0.25" lower="0.0" upper="1.0"/>
 		</relativeRate>
+		<gammaShape gammaCategories="4">
+			<parameter id="${fasta_dict['name']}.alpha" value="0.5" lower="0.0"/>
+		</gammaShape>
 	</siteModel>
 
 	<!--                                                                         -->
@@ -571,6 +574,9 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 		<scaleOperator scaleFactor="0.75" weight="1">
 			<parameter idref="${fasta_dict['name']}.kappa"/>
 		</scaleOperator>
+		<scaleOperator scaleFactor="0.75" weight="1">
+			<parameter idref="${fasta_dict['name']}.alpha"/>
+		</scaleOperator>
 		<deltaExchange delta="0.01" weight="1">
 			<parameter idref="${fasta_dict['name']}.frequencies"/>
 		</deltaExchange>	
@@ -749,6 +755,9 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 				<logNormalPrior mu="1.0" sigma="1.25" offset="0.0">
 					<parameter idref="${fasta_dict['name']}.kappa"/>
 				</logNormalPrior>
+				<exponentialPrior mean="0.5" offset="0.0">
+					<parameter idref="${fasta_dict['name']}.alpha"/>
+				</exponentialPrior>
 				<dirichletPrior alpha="1.0" sumsTo="1.0">
 					<parameter idref="${fasta_dict['name']}.frequencies"/>
 				</dirichletPrior>
@@ -931,6 +940,7 @@ bin_prob = config['bin_probs'][trait]%>
 %else:
 			<parameter idref="${fasta_dict['name']}.kappa"/>
 			<parameter idref="${fasta_dict['name']}.frequencies"/>
+			<parameter idref="${fasta_dict['name']}.alpha"/>
 			<statistic idref="${fasta_dict['name']}.mu"/>
 %endif
 %endfor
