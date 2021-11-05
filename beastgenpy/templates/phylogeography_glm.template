@@ -486,15 +486,7 @@ trait_rand_design = config['re_matrices'][trait]
 		</frequencyModel>
 
         <!-- Ancestral state reconstruction -->
-<% 
-len_1s = (n_options**2)-2
-all_count_lst = [0.0]
-for i in range(len_1s):
-    all_count_lst.append(1.0)
-all_count_lst.append(0.0)
-all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
-%>       
-        <parameter id="${trait}.count.${epoch_number}" value="${all_count_string}"/>
+        <parameter id="${trait}.count.${epoch_number}" value="${config['count_matrix'][trait]}"/>
 
         <rewards>
 %for place,option in enumerate(config['all_trait_options'][trait]):
@@ -539,16 +531,8 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 			</frequencies>
 		</frequencyModel>
 
-        <!-- Ancestral state reconstruction -->
-<% 
-len_1s = (n_options**2)-2
-all_count_lst = [0.0]
-for i in range(len_1s):
-    all_count_lst.append(1.0)
-all_count_lst.append(0.0)
-all_count_string = str(all_count_lst).replace(",", "").lstrip("[").rstrip("]")
-%>       
-        <parameter id="${trait}.count" value="${all_count_string}"/>
+        <!-- Ancestral state reconstruction -->       
+        <parameter id="${trait}.count" value="${config['count_matrix'][trait]}}"/>
 
         <rewards>
 %for place,option in enumerate(config['all_trait_options'][trait]):

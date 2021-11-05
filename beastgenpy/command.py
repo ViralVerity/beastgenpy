@@ -106,6 +106,7 @@ def main(sysargs = sys.argv[1:]):
 
     if config["glm"]: #needs dta bool to be true
         config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.symmetric_predictor_dir, args.predictor_info_file, args.asymmetric_predictor_file, config)
+        config = glm_funcs.get_markov_counts(config)
     else:
         config["trait_to_predictor"] = False
         config["re_matrices"] = False

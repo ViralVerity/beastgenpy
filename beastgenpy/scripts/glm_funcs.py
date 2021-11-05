@@ -92,8 +92,8 @@ def process_asymmetric_predictors(trait_name, predictor_file, standardised_trans
             frommatrix[i,:] = option
             tomatrix[:,i] = option
         
-        from_value = make_vector(frommatrix, dim, 10)  
-        to_value = make_vector(tomatrix,dim,10)
+        from_value = make_vector(frommatrix, dim, 10, False)  
+        to_value = make_vector(tomatrix,dim,10, False)
 
         matrix_dict[key_from] = from_value
         matrix_dict[key_to] = to_value
@@ -147,12 +147,15 @@ def process_symmetric_predictors(predictor_name, trait_name, trait_options, std_
 
         matrix[location_1, location_2] = value
 
-    vector = make_vector(matrix, dim, 10)
+    vector = make_vector(matrix, dim, 10, False)
 
     return vector
 
-def make_vector(matrix, dim, dec_places):
-    indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
+def make_vector(matrix, dim, dec_places, diagonal_included):
+    if diagonal_included:
+        indices=np.triu_indices(dim)
+    else:
+        indices = np.triu_indices(dim,1) #get indices of top triangle, moved right by one to leave out diagonal
     upper = matrix[indices] #Create matrix of top triangle
     lowerprep = np.transpose(matrix) #Transpose matrix, so that lower triangle will be read in the desired order
     lower = lowerprep[indices] #Use same indices, but gets lower triangle of original matrix this time
@@ -199,8 +202,8 @@ def make_twoway_REmatrices(trait_options_dict):
                 tomatrix[:,i-1] = 0.0
                 tomatrix[i,i] = 0.0
  
-            trait_rand_design[key_from] = make_vector(frommatrix, dim, 1)
-            trait_rand_design[key_to] = make_vector(tomatrix,dim, 1)
+            trait_rand_design[key_from] = make_vector(frommatrix, dim, 1, False)
+            trait_rand_design[key_to] = make_vector(tomatrix,dim, 1, False)
 
         re_matrices[trait] = trait_rand_design
 
@@ -254,6 +257,22 @@ def loop_for_processing(actual_predictor_dir, info_file, asymmetric_file, trait_
 
     return trait_to_predictor
 
+def get_markov_counts(config):
+
+    config["count_matrix"] = {}
+
+    for trait in config["traits"]:
+
+        options = config['all_trait_options'][trait]
+
+        dim = len(options)
+        countmatrix = np.ones((dim,dim)) 
+        np.fill_diagonal(countmatrix,0.0)
+
+        config["count_matrix"][trait] = make_vector(countmatrix, dim, 1, True)
+            
+    return config
+     
 
 
 ###These functions haven't been integrated yet but will be useful when they have###
