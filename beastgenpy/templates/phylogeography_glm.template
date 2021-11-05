@@ -180,7 +180,7 @@
 	<!-- site model                                                              -->
 	<siteModel id="${fasta_dict['name']}.${cp}.siteModel">
 		<substitutionModel>
-			<HKYModel idref="${fasta_dict['name']}.CP1.hky"/>
+			<HKYModel idref="${fasta_dict['name']}.${cp}.hky"/>
 		</substitutionModel>
 		<relativeRate>
 			<parameter id="${fasta_dict['name']}.${cp}.nu" value="0.25" lower="0.0" upper="1.0"/>
@@ -532,7 +532,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 		</frequencyModel>
 
         <!-- Ancestral state reconstruction -->       
-        <parameter id="${trait}.count" value="${config['count_matrix'][trait]}}"/>
+        <parameter id="${trait}.count" value="${config['count_matrix'][trait]}"/>
 
         <rewards>
 %for place,option in enumerate(config['all_trait_options'][trait]):
