@@ -16,8 +16,14 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
 
     if config["ambiguities"]:
         ambiguities = list(config["ambiguities"].keys())
+        amb_options = set()
+        for string in config["ambiguities"].values():
+            lst = string.split(" ")
+            for ele in lst:
+                amb_options.add(ele) 
     else:
-        ambambiguities = []
+        ambiguities = []
+        amb_options = set()
     
     traits = [i.strip(" ") for i in traits.split(",")]
     for number, trait in enumerate(traits):
@@ -44,6 +50,12 @@ def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_del
                 trait_dict[tax].append(value)
                 if value not in ambiguities:
                     all_trait_options_prep[trait].add(value) 
+
+    #not sure how this will work beast-wise
+    for i in amb_options:
+        if i not in all_trait_options_prep[trait]:
+            all_trait_options_prep[trait].add(i)
+            
                 
     for trait, options in all_trait_options_prep.items():
         new_lst = sorted(options)
