@@ -7,6 +7,7 @@ import csv
 import numpy as np
 import statistics
 import os
+np.set_printoptions(threshold=np.inf)
 
 def run_glm_functions(predictor_dir_input, predictor_info_file, asymmetric_file, config):
 #has to have predictors dir present if glm is true
