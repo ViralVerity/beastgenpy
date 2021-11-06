@@ -35,7 +35,7 @@ def main(sysargs = sys.argv[1:]):
     tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
 
     growth_model_group = parser.add_argument_group("Growth model analysis")
-    growth_model_group.add_argument("--growth-model", dest="growth_model", default="skygrid")
+    growth_model_group.add_argument("--growth-model", dest="growth_model")
     growth_model_group.add_argument("--sg-cutoff", dest="sg_cutoff")
     growth_model_group.add_argument("--sg-gridpoints", dest="sg_gridpoints")
 

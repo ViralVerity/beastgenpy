@@ -27,243 +27,16 @@
     </taxa> 
 
 
-%if config["fasta"]:
-%for fasta_dict in config["fasta"]:
-
-<!-- sequence alignment -->
-	<alignment id="${fasta_dict['name']}" dataType="nucleotide">
-%for sequence in fasta_dict["sequences"]:
-		<sequence>
-			<taxon idref="${sequence.id}"/>
-			${sequence.seq}
-		</sequence>
-%endfor
-	</alignment>
-%if fasta_dict["codon_partitioning"]:
-
-%for count,cp in enumerate(["CP1", "CP2", "CP3"]):
-	<patterns id="${fasta_dict['name']}.${cp}.patterns" from="${count+1}" every="3" strip="false">
-		<alignment idref="${fasta_dict['name']}"/>
-	</patterns>
-%endfor
-%else:
-	<patterns id="${fasta_dict['name']}.patterns" from="1" strip="false">
-		<alignment idref="${fasta_dict['name']}"/>
-	</patterns>
-%endif
-%endfor
-%endif
-
-	<constantSize id="initialDemo" units="years">
-		<populationSize>
-			<parameter id="initialDemo.popSize" value="1.0"/>
-		</populationSize>
-	</constantSize>
-	
-%if config["starting_tree"]:
-	<newick id="${config['tree_name']}">
-	${config['newick_dict'][config['tree_name']]}
-	</newick>
-%else:
-	<!-- Generate a random starting tree under the coalescent process            -->
-	<coalescentSimulator id="${config['tree_name']}">
+%if len(config["tree_file_dict"]) > 0:
+<!-- Insert starting tree blocks -->  
+%for tree_name, tree_file in config["tree_file_dict"].items():
+	<empiricalTreeDistributionModel id="treeModel" fileName="${tree_file}">
 		<taxa idref="taxa"/>
-		<constantSize idref="initialDemo"/>
-	</coalescentSimulator>
-%endif
-
-
-%if not config["fixed_tree"]:
-	<!-- Generate a tree model                                                   -->
-	<treeModel id="treeModel">
-		<coalescentTree idref="${config['tree_name']}"/>
-		<rootHeight>
-			<parameter id="treeModel.rootHeight"/>
-		</rootHeight>
-		<nodeHeights internalNodes="true">
-			<parameter id="treeModel.internalNodeHeights"/>
-		</nodeHeights>
-		<nodeHeights internalNodes="true" rootNode="true">
-			<parameter id="treeModel.allInternalNodeHeights"/>
-		</nodeHeights>
-	</treeModel>
-
-	<!-- Statistic for time of most recent common ancestor of tree               -->
-	<tmrcaStatistic id="age(root)" absolute="true">
-		<treeModel idref="treeModel"/>
-	</tmrcaStatistic>
-	<!-- Statistic for sum of the branch lengths of the tree (tree length)       -->
-	<treeLengthStatistic id="treeLength">
-		<treeModel idref="treeModel"/>
-	</treeLengthStatistic>
-%endif
-
-
-%if config["growth_model"] == "skygrid":
-	<!-- Generate a gmrfSkyGridLikelihood for the Bayesian SkyGrid process       -->
-	<gmrfSkyGridLikelihood id="skygrid">
-		<populationSizes>
-
-			<!-- skygrid.logPopSize is in log units unlike other popSize                 -->
-			<parameter id="skygrid.logPopSize" dimension="${config['gridpoints']}" value="1.0"/>
-		</populationSizes>
-		<precisionParameter>
-			<parameter id="skygrid.precision" value="0.1" lower="0.0"/>
-		</precisionParameter>
-		<numGridPoints>
-			<parameter id="skygrid.numGridPoints" value="${config['gridpoints']-1}.0"/>
-		</numGridPoints>
-		<cutOff>
-			<parameter id="skygrid.cutOff" value="${config['cutoff']}"/>
-		</cutOff>
-		<populationTree>
-			<treeModel idref="treeModel"/>
-		</populationTree>
-	</gmrfSkyGridLikelihood>
-%endif
-
-<!-- The uncorrelated relaxed clock (Drummond, Ho, Phillips & Rambaut (2006) PLoS Biology 4, e88 )-->
-	<discretizedBranchRates id="default.branchRates">
-		<treeModel idref="treeModel"/>
-		<distribution>
-			<logNormalDistributionModel meanInRealSpace="true">
-				<mean>
-					<parameter id="default.ucld.mean" value="0.001" lower="0.0"/>
-				</mean>
-				<stdev>
-					<parameter id="default.ucld.stdev" value="0.3333333333333333" lower="0.0"/>
-				</stdev>
-			</logNormalDistributionModel>
-		</distribution>
-		<rateCategories>
-			<parameter id="default.branchRates.categories"/>
-		</rateCategories>
-	</discretizedBranchRates>
-	
-	<rateStatistic id="default.meanRate" name="default.meanRate" mode="mean" internal="true" external="true">
-		<treeModel idref="treeModel"/>
-		<discretizedBranchRates idref="default.branchRates"/>
-	</rateStatistic>
-	
-	<rateStatistic id="default.coefficientOfVariation" name="default.coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
-		<treeModel idref="treeModel"/>
-		<discretizedBranchRates idref="default.branchRates"/>
-	</rateStatistic>
-	
-	<rateCovarianceStatistic id="default.covariance" name="default.covariance">
-		<treeModel idref="treeModel"/>
-		<discretizedBranchRates idref="default.branchRates"/>
-	</rateCovarianceStatistic>
-
-
-%if config["fasta"]:
-%for fasta_dict in config["fasta"]:
-%if fasta_dict["codon_partitioning"]:
-%for cp in ["CP1", "CP2", "CP3"]:
-
-	<HKYModel id="${fasta_dict['name']}.${cp}.hky">
-		<frequencies>
-			<frequencyModel dataType="nucleotide">
-				<frequencies>
-					<parameter id="${fasta_dict['name']}.${cp}.frequencies" value="0.25 0.25 0.25 0.25"/>
-				</frequencies>
-			</frequencyModel>
-		</frequencies>
-		<kappa>
-			<parameter id="${fasta_dict['name']}.${cp}.kappa" value="2.0" lower="0.0"/>
-		</kappa>
-	</HKYModel>
-
-
-	<!-- site model                                                              -->
-	<siteModel id="${fasta_dict['name']}.${cp}.siteModel">
-		<substitutionModel>
-			<HKYModel idref="${fasta_dict['name']}.${cp}.hky"/>
-		</substitutionModel>
-		<relativeRate>
-			<parameter id="${fasta_dict['name']}.${cp}.nu" value="0.25" lower="0.0" upper="1.0"/>
-		</relativeRate>
-		<gammaShape gammaCategories="4">
-			<parameter id="${fasta_dict['name']}.${cp}.alpha" value="0.5" lower="0.0"/>
-		</gammaShape>
-	</siteModel>
-
-	<!--                                                                         -->
-	<statistic id="${fasta_dict['name']}.${cp}.mu" name="mu">
-		<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
-	</statistic>
+	</empiricalTreeDistributionModel> 
 %endfor
-%else:
-		<!-- The HKY substitution model (Hasegawa, Kishino & Yano, 1985)             -->
-	<HKYModel id="${fasta_dict['name']}.hky">
-		<frequencies>
-			<frequencyModel dataType="nucleotide">
-				<frequencies>
-					<parameter id="${fasta_dict['name']}.frequencies" value="0.25 0.25 0.25 0.25"/>
-				</frequencies>
-			</frequencyModel>
-		</frequencies>
-		<kappa>
-			<parameter id="${fasta_dict['name']}.kappa" value="2.0" lower="0.0"/>
-		</kappa>
-	</HKYModel>
-
-	<!-- site model                                                              -->
-	<siteModel id="${fasta_dict['name']}.siteModel">
-		<substitutionModel>
-			<HKYModel idref="${fasta_dict['name']}.hky"/>
-		</substitutionModel>
-		<relativeRate>
-			<parameter id="${fasta_dict['name']}.nu" value="0.25" lower="0.0" upper="1.0"/>
-		</relativeRate>
-		<gammaShape gammaCategories="4">
-			<parameter id="${fasta_dict['name']}.alpha" value="0.5" lower="0.0"/>
-		</gammaShape>
-	</siteModel>
-
-	<!--                                                                         -->
-	<statistic id="${fasta_dict['name']}.mu" name="mu">
-		<siteModel idref="${fasta_dict['name']}.siteModel"/>
-	</statistic>
-%endif
-%endfor
-	<compoundParameter id="default.allNus">
-%for fasta_dict in config["fasta"]:
-%if fasta_dict["codon_partitioning"]:
-%for cp in ["CP1", "CP2", "CP3"]:
-		<parameter idref="${fasta_dict['name']}.${cp}.nu"/>
-%endfor
-%else:
-		<parameter idref="${fasta_dict['name']}.nu"/>
-%endif
-%endfor
-	</compoundParameter>
+##here add in the non-fixed tree stuff
 %endif
 
-%if config['fasta']:
-	<treeDataLikelihood id="treeLikelihood" useAmbiguities="false">
-%for fasta_dict in config["fasta"]:
-%if fasta_dict["codon_partitioning"]:
-%for cp in ["CP1", "CP2", "CP3"]: 
-
-		<partition>
-			<patterns idref="${fasta_dict['name']}.${cp}.patterns"/>
-			<siteModel idref="${fasta_dict['name']}.${cp}.siteModel"/>
-		</partition>
-
-%endfor
-%else:
-		<partition>
-			<patterns idref="${fasta_dict['name']}.patterns"/>
-			<siteModel idref="${fasta_dict['name']}.siteModel"/>
-		</partition>
-%endif 
-%endfor
-
-		<treeModel idref="treeModel"/>
-		<strictClockBranchRates idref="default.branchRates"/>
-	</treeDataLikelihood>
-%endif
 
 %for trait in config['traits']:
 <%  
@@ -554,85 +327,6 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
 
-%if config["fasta"]:
-%for fasta_dict in config["fasta"]:
-%if fasta_dict["codon_partitioning"]:
-%for cp in ["CP1", "CP2", "CP3"]:
-		<scaleOperator scaleFactor="0.75" weight="1">
-			<parameter idref="${fasta_dict['name']}.${cp}.kappa"/>
-		</scaleOperator>
-		<scaleOperator scaleFactor="0.75" weight="1">
-			<parameter idref="${fasta_dict['name']}.${cp}.alpha"/>
-		</scaleOperator>
-		<deltaExchange delta="0.01" weight="1">
-			<parameter idref="${fasta_dict['name']}.${cp}.frequencies"/>
-		</deltaExchange>
-%endfor
-%else:
-		<scaleOperator scaleFactor="0.75" weight="1">
-			<parameter idref="${fasta_dict['name']}.kappa"/>
-		</scaleOperator>
-		<scaleOperator scaleFactor="0.75" weight="1">
-			<parameter idref="${fasta_dict['name']}.alpha"/>
-		</scaleOperator>
-		<deltaExchange delta="0.01" weight="1">
-			<parameter idref="${fasta_dict['name']}.frequencies"/>
-		</deltaExchange>	
-%endif
-%endfor
-		<deltaExchange delta="0.01" weight="3">
-			<parameter idref="default.allNus"/>
-		</deltaExchange>
-%endif
-
-		<scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="default.ucld.mean"/>
-		</scaleOperator>
-		<scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="default.ucld.stdev"/>
-		</scaleOperator>
-		<upDownOperator scaleFactor="0.75" weight="3">
-			<up>
-				<parameter idref="treeModel.allInternalNodeHeights"/>
-			</up>
-			<down>
-				<parameter idref="default.ucld.mean"/>
-			</down>
-		</upDownOperator>
-		<swapOperator size="1" weight="10" autoOptimize="false">
-			<parameter idref="default.branchRates.categories"/>
-		</swapOperator>
-		<uniformIntegerOperator weight="10">
-			<parameter idref="default.branchRates.categories"/>
-		</uniformIntegerOperator>
-
-
-		<subtreeSlide size="1.0" gaussian="true" weight="30">
-			<treeModel idref="treeModel"/>
-		</subtreeSlide>
-		<narrowExchange weight="30">
-			<treeModel idref="treeModel"/>
-		</narrowExchange>
-		<wideExchange weight="3">
-			<treeModel idref="treeModel"/>
-		</wideExchange>
-		<wilsonBalding weight="3">
-			<treeModel idref="treeModel"/>
-		</wilsonBalding>
-		<scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="treeModel.rootHeight"/>
-		</scaleOperator>
-		<uniformOperator weight="30">
-			<parameter idref="treeModel.internalNodeHeights"/>
-		</uniformOperator>
-%if config["growth_model"] == "skygrid":
-		<gmrfGridBlockUpdateOperator scaleFactor="1.0" weight="2">
-			<gmrfSkyrideLikelihood idref="skygrid"/>
-		</gmrfGridBlockUpdateOperator>
-		<scaleOperator scaleFactor="0.75" weight="1">
-			<parameter idref="skygrid.precision"/>
-		</scaleOperator>
-%endif
 
 %for trait in config['traits']:
 %if config['epoch']:
@@ -735,54 +429,6 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 		<joint id="joint">
 			<prior id="prior">
 
-%if config["fasta"]:
-%for fasta_dict in config["fasta"]:
-%if fasta_dict["codon_partitioning"]:
-%for cp in ["CP1", "CP2", "CP3"]:
-				<logNormalPrior mu="1.0" sigma="1.25" offset="0.0">
-					<parameter idref="${fasta_dict['name']}.${cp}.kappa"/>
-				</logNormalPrior>
-				<exponentialPrior mean="0.5" offset="0.0">
-					<parameter idref="${fasta_dict['name']}.${cp}.alpha"/>
-				</exponentialPrior>
-				<dirichletPrior alpha="1.0" sumsTo="1.0">
-					<parameter idref="${fasta_dict['name']}.${cp}.frequencies"/>
-				</dirichletPrior>
-%endfor
-%else:
-				<logNormalPrior mu="1.0" sigma="1.25" offset="0.0">
-					<parameter idref="${fasta_dict['name']}.kappa"/>
-				</logNormalPrior>
-				<exponentialPrior mean="0.5" offset="0.0">
-					<parameter idref="${fasta_dict['name']}.alpha"/>
-				</exponentialPrior>
-				<dirichletPrior alpha="1.0" sumsTo="1.0">
-					<parameter idref="${fasta_dict['name']}.frequencies"/>
-				</dirichletPrior>
-%endif
-%endfor
-				<dirichletPrior alpha="1.0" sumsTo="1.0">
-					<parameter idref="default.allNus"/>
-				</dirichletPrior>
-%endif
-
-				<ctmcScalePrior>
-					<ctmcScale>
-						<parameter idref="default.ucld.mean"/>
-					</ctmcScale>
-					<treeModel idref="treeModel"/>
-				</ctmcScalePrior>
-				<exponentialPrior mean="0.3333333333333333" offset="0.0">
-					<parameter idref="default.ucld.stdev"/>
-				</exponentialPrior>
-
-%if config["growth_model"] == "skygrid":
-				<gmrfSkyGridLikelihood idref="skygrid"/>
-				<gammaPrior shape="0.001" scale="1000.0" offset="0.0">
-					<parameter idref="skygrid.precision"/>
-				</gammaPrior>
-%endif
-
 %for trait in config['traits']:
 <% n_predictors = len(config['trait_to_predictor'][trait])
 bin_prob = config['bin_probs'][trait]%>
@@ -845,10 +491,7 @@ bin_prob = config['bin_probs'][trait]%>
 			<likelihood id="likelihood">
 
 				<!-- START Discrete Traits Model                                             -->
-%if config["fasta"]:
-				<treeDataLikelihood idref="treeLikelihood"/>
-%endif
-				<discretizedBranchRates idref="default.branchRates"/>
+
 %for trait in config['traits']:
 %if config['epoch']:
 %for epoch_number in range(len(config["transition_times"])):
@@ -875,12 +518,7 @@ bin_prob = config['bin_probs'][trait]%>
 			<column label="Likelihood" dp="4" width="12">
 				<likelihood idref="likelihood"/>
 			</column>
-			<column label="age(root)" sf="6" width="12">
-				<tmrcaStatistic idref="age(root)"/>
-			</column>
-			<column label="default.ucld.mean" sf="6" width="12">
-				<parameter idref="default.ucld.mean"/>
-			</column>
+			
 %for trait in config['traits']:
 %if config['epoch']:
 %for epoch_number in range(len(config["transition_times"])):
@@ -914,38 +552,6 @@ bin_prob = config['bin_probs'][trait]%>
 			<joint idref="joint"/>
 			<prior idref="prior"/>
 			<likelihood idref="likelihood"/>
-			<parameter idref="treeModel.rootHeight"/>
-			<tmrcaStatistic idref="age(root)"/>
-			<treeLengthStatistic idref="treeLength"/>
-
-%if config["growth_model"] == "skygrid":
-			<parameter idref="skygrid.precision"/>
-			<parameter idref="skygrid.logPopSize"/>
-			<parameter idref="skygrid.cutOff"/>
-			<gmrfSkyGridLikelihood idref="skygrid"/>
-
-%endif
-
-%if config["fasta"]:
-%for fasta_dict in config["fasta"]:
-%if fasta_dict["codon_partitioning"]:
-%for cp in ["CP1", "CP2", "CP3"]:
-			<parameter idref="${fasta_dict['name']}.${cp}.kappa"/>
-			<parameter idref="${fasta_dict['name']}.${cp}.alpha"/>
-			<parameter idref="${fasta_dict['name']}.${cp}.frequencies"/>
-			<statistic idref="${fasta_dict['name']}.${cp}.mu"/>
-%endfor
-%else:
-			<parameter idref="${fasta_dict['name']}.kappa"/>
-			<parameter idref="${fasta_dict['name']}.frequencies"/>
-			<parameter idref="${fasta_dict['name']}.alpha"/>
-			<statistic idref="${fasta_dict['name']}.mu"/>
-%endif
-%endfor
-			<compoundParameter idref="default.allNus"/>
-%endif
-			<parameter idref="default.ucld.mean"/>
-			<parameter idref="default.ucld.stdev"/>
 			
 %for trait in config['traits']:
 %if config['epoch']:
