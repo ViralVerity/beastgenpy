@@ -14,7 +14,7 @@ def run_glm_functions(predictor_dir_input, predictor_info_file, asymmetric_file,
 #errors to do with the structure of the predictor dir
 
     re_matrices = make_twoway_REmatrices(config["all_trait_options"])
-    bin_probs = calculate_binomial_likelihood(config["all_trait_options"])
+    
     
     trait_to_predictor = defaultdict(dict)
     if len(config["traits"]) == 1:
@@ -24,6 +24,8 @@ def run_glm_functions(predictor_dir_input, predictor_info_file, asymmetric_file,
         for trait_name in config["traits"]:
             predictor_dir = os.path.join(predictor_dir_input,trait)
             trait_to_predictor = loop_for_processing(predictor_dir, predictor_info_file, asymmetric_file, trait_name, trait_to_predictor, config["all_trait_options"])
+
+    bin_probs = calculate_binomial_likelihood(trait_to_predictor)
 
     return trait_to_predictor, re_matrices, bin_probs
 
@@ -208,12 +210,12 @@ def make_twoway_REmatrices(trait_options_dict):
 
     return re_matrices
 
-def calculate_binomial_likelihood(trait_options_dict):
+def calculate_binomial_likelihood(trait_to_predictor): #this is wrong - needs to be the number of predictors
 
     bin_probs  = {}
     
-    for trait, options in trait_options_dict.items():
-        n = len(options)
+    for trait, predictor_dict in trait_to_predictor.items():
+        n = len(predictor_dict)
         p = 1 - (0.5**(1/n))
         bin_probs[trait] = p
     
