@@ -5,6 +5,7 @@ channels:
   - defaults
 dependencies:
   - biopython=1.74
+  - geopy=2.2.0
   - pip=19.3.1
   - python=3.7
   - pip:
