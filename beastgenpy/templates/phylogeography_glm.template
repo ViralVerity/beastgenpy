@@ -123,6 +123,35 @@
 			<treeModel idref="treeModel"/>
 		</populationTree>
 	</gmrfSkyGridLikelihood>
+
+	<gmrfSkyrideGradient id="gmrfGradientPop" wrtParameter="logPopulationSizes">
+		<gmrfSkyGridLikelihood idref="skygrid"/>
+	</gmrfSkyrideGradient>
+	
+	<compoundParameter id="skygrid.parameters">
+		<parameter idref="skygrid.precision"/>
+		<parameter idref="skygrid.logPopSize"/>
+	</compoundParameter>
+	
+	<gmrfSkyrideGradient id="gmrfGradientPrec" wrtParameter="precision">
+		<gmrfSkyGridLikelihood idref="skygrid"/>
+	</gmrfSkyrideGradient>
+	
+	<gammaPrior id="skygrid.precision.prior" shape="0.001" scale="1000" offset="0.0">
+		<parameter idref="skygrid.precision"/>
+	</gammaPrior>
+	
+	<jointGradient id="joint.skygrid.precision">
+		<gmrfSkyrideGradient idref="gmrfGradientPrec"/>
+		<gradient>
+			<gammaPrior idref="skygrid.precision.prior"/>
+			<parameter idref="skygrid.precision"/>
+		</gradient>
+	</jointGradient>
+	
+	<compoundGradient id="full.skygrid.gradient">
+		<jointGradient idref="joint.skygrid.precision"/>
+		<gmrfSkyrideGradient idref="gmrfGradientPop"/>
 %endif
 
 <!-- The uncorrelated relaxed clock (Drummond, Ho, Phillips & Rambaut (2006) PLoS Biology 4, e88 )-->
@@ -558,7 +587,7 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
 
-%if config["fasta"]:
+%if not config["fixed_tree"]:
 %for fasta_dict in config["fasta"]:
 %if fasta_dict["codon_partitioning"]:
 %for cp in ["CP1", "CP2", "CP3"]:
@@ -587,7 +616,6 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 		<deltaExchange delta="0.01" weight="3">
 			<parameter idref="default.allNus"/>
 		</deltaExchange>
-%endif
 
 		<scaleOperator scaleFactor="0.75" weight="3">
 			<parameter idref="default.ucld.mean"/>
@@ -610,32 +638,25 @@ reward_trait_str = str(reward_trait_list).replace(",", "").lstrip("[").rstrip("]
 			<parameter idref="default.branchRates.categories"/>
 		</uniformIntegerOperator>
 
+		<subtreeLeap size="1.0" weight="823">
+			<treeModel idref="treeModel"/>
+		</subtreeLeap>
+		<fixedHeightSubtreePruneRegraft weight="82.3">
+			<treeModel idref="treeModel"/>
+		</fixedHeightSubtreePruneRegraft>
 
-		<subtreeSlide size="1.0" gaussian="true" weight="30">
-			<treeModel idref="treeModel"/>
-		</subtreeSlide>
-		<narrowExchange weight="30">
-			<treeModel idref="treeModel"/>
-		</narrowExchange>
-		<wideExchange weight="3">
-			<treeModel idref="treeModel"/>
-		</wideExchange>
-		<wilsonBalding weight="3">
-			<treeModel idref="treeModel"/>
-		</wilsonBalding>
-		<scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="treeModel.rootHeight"/>
-		</scaleOperator>
-		<uniformOperator weight="30">
-			<parameter idref="treeModel.internalNodeHeights"/>
-		</uniformOperator>
 %if config["growth_model"] == "skygrid":
-		<gmrfGridBlockUpdateOperator scaleFactor="1.0" weight="2">
-			<gmrfSkyrideLikelihood idref="skygrid"/>
-		</gmrfGridBlockUpdateOperator>
-		<scaleOperator scaleFactor="0.75" weight="1">
-			<parameter idref="skygrid.precision"/>
-		</scaleOperator>
+		    <!-- skygrid hmc -->
+        <hamiltonianMonteCarloOperator weight="5" nSteps="50" stepSize="1E-2" mode="vanilla" 
+                                        autoOptimize="true" gradientCheckCount="1" gradientCheckTolerance="1E-1" 
+                                        preconditioning="none" preconditioningUpdateFrequency="100">
+	 		<compoundGradient idref="full.skygrid.gradient"/>
+			<compoundParameter idref="skygrid.parameters"/>
+			<signTransform start="1" end="1">
+				<compoundParameter idref="skygrid.parameters"/>
+			</signTransform>
+ 		</hamiltonianMonteCarloOperator>
+%endif
 %endif
 
 %for trait in config['traits']:
