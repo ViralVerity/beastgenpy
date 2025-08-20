@@ -27,6 +27,12 @@
     </taxa> 
 
 
+%if config["fixed_tree"]:
+	<empiricalTreeDistributionModel id="treeModel" fileName="${config['tree_file']}">
+		<taxa idref="taxa"/>
+	</empiricalTreeDistributionModel> 
+
+%else:
 %if config["fasta"]:
 %for fasta_dict in config["fasta"]:
 
@@ -54,17 +60,18 @@
 %endfor
 %endif
 
-	<constantSize id="initialDemo" units="years">
-		<populationSize>
-			<parameter id="initialDemo.popSize" value="1.0"/>
-		</populationSize>
-	</constantSize>
-	
 %if config["starting_tree"]:
 	<newick id="${config['tree_name']}">
 	${config['newick_dict'][config['tree_name']]}
 	</newick>
 %else:
+<!-- TREE GENERATION -->
+	<constantSize id="initialDemo" units="years">
+		<populationSize>
+			<parameter id="initialDemo.popSize" value="1.0"/>
+		</populationSize>
+	</constantSize>
+
 	<!-- Generate a random starting tree under the coalescent process            -->
 	<coalescentSimulator id="${config['tree_name']}">
 		<taxa idref="taxa"/>
@@ -72,8 +79,6 @@
 	</coalescentSimulator>
 %endif
 
-
-%if not config["fixed_tree"]:
 	<!-- Generate a tree model                                                   -->
 	<treeModel id="treeModel">
 		<coalescentTree idref="${config['tree_name']}"/>
@@ -96,8 +101,6 @@
 	<treeLengthStatistic id="treeLength">
 		<treeModel idref="treeModel"/>
 	</treeLengthStatistic>
-%endif
-
 
 %if config["growth_model"] == "skygrid":
 	<!-- Generate a gmrfSkyGridLikelihood for the Bayesian SkyGrid process       -->
@@ -156,7 +159,6 @@
 	</rateCovarianceStatistic>
 
 
-%if config["fasta"]:
 %for fasta_dict in config["fasta"]:
 %if fasta_dict["codon_partitioning"]:
 %for cp in ["CP1", "CP2", "CP3"]:
@@ -238,7 +240,6 @@
 %endif
 %endfor
 	</compoundParameter>
-%endif
 
 %if config['fasta']:
 	<treeDataLikelihood id="treeLikelihood" useAmbiguities="false">
@@ -264,6 +265,9 @@
 		<strictClockBranchRates idref="default.branchRates"/>
 	</treeDataLikelihood>
 %endif
+%endif
+
+<!-- END TREE GENERATION -->
 
 %for trait in config['traits']:
 <%  

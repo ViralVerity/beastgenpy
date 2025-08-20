@@ -90,7 +90,7 @@ def main(sysargs = sys.argv[1:]):
         config["fasta"] = False
 
     if config["fixed_tree"] or config["starting_tree"]:
-        config["tree_name"], config["tree_file_dict"], config["newick_dict"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
+        config["tree_name"], config["tree_file_dict"], config["newick_dict"], config["tree_file"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
     else:
         config["tree_name"] = "tree1"
         config["tree_file_dict"] = False
