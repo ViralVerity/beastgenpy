@@ -34,9 +34,14 @@ def parse_fasta(fasta_list, codon_partitioning):
     else:
         cps = ""
 
-    taxa = []
-    for seq in SeqIO.parse(fastas[0],"fasta"):
-        taxa.append(seq.id)
+    taxa = set()
+    if len(fastas) > 1:
+        for fasta in fastas:
+            for seq in SeqIO.parse(fasta,"fasta"):
+                taxa.add(seq.id)
+    else:
+        for seq in SeqIO.parse(fastas[0],"fasta"):
+            taxa.add(seq.id)
 
     fasta_info = []
     for fasta,cp in zip(fastas, cps):

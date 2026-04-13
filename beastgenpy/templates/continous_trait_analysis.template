@@ -6,9 +6,11 @@
 
 <beast>
    <!-- The list of taxa to be analysed (can also include dates/ages).          -->
-%for tax_set, taxa_list in config["taxa"].items():
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]
+taxa_list = taxon_info["sequences"]%>
     <!-- ntax=${len(taxa_list)}                                             -->
-    <taxa id="taxa_${tax_set}">
+    <taxa id="taxa_${name}">
 %for sequence in taxa_list: 
         <taxon id="${sequence}">
             <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
