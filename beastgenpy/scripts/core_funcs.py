@@ -29,7 +29,10 @@ def decimal_date(date_string):
 def parse_fasta(fasta_list, codon_partitioning):
 
     fastas = fasta_list.split(",")
-    cps = codon_partitioning.split(",")
+    if codon_partitioning:
+        cps = codon_partitioning.split(",")
+    else:
+        cps = ""
 
     taxa = []
     for seq in SeqIO.parse(fastas[0],"fasta"):
