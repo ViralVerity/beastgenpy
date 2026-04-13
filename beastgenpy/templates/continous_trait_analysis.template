@@ -24,14 +24,28 @@ taxa_list = taxon_info["sequences"]%>
     </taxa> 
 %endfor
 
-%if len(config["tree_file_dict"]) > 0:
+#patterns
+
+%if config["tree_file_dict"]:
 <!-- Insert starting tree blocks -->  
 %for tree_name, tree_file in config["tree_file_dict"].items():
 	<empiricalTreeDistributionModel id="${tree_name}" fileName="${tree_file}">
 		<taxa idref="taxa_${tree_name}"/>
 	</empiricalTreeDistributionModel> 
 %endfor
-##here add in the non-fixed tree stuff
+<constantSize id="initialDemo" units="years">
+		<populationSize>
+			<parameter id="initialDemo.popSize" value="100.0"/>
+		</populationSize>
+	</constantSize>
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>
+	<!-- Generate a random starting tree under the coalescent process            -->
+	<coalescentSimulator id="startingTree_${name}">
+		<taxa idref="taxa_${name}"/>
+		<constantSize idref="initialDemo"/>
+	</coalescentSimulator>
+%endfor
 %endif
 
 <!-- START Multivariate diffusion model                                      -->
@@ -59,7 +73,7 @@ taxa_list = taxon_info["sequences"]%>
 	<!-- END Multivariate diffusion model                                        -->
 
 <%
-if len(config["tree_file_dict"]) > 0:
+if config["tree_file_dict"]:
 	tree_lst = config["tree_file_dict"].keys()
 else:
 	tree_lst = ["treeModel"]
