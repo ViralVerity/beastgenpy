@@ -13,10 +13,10 @@ taxa_list = taxon_info["sequences"]%>
     <taxa id="taxa_${name}">
 %for sequence in taxa_list: 
         <taxon id="${sequence}">
-            <date value="${core_funcs.decimal_date(sequence.split("|")[-1])}" direction="forwards" units="years"/> 
+            <date value="${core_funcs.decimal_date(sequence.id.split("|")[-1])}" direction="forwards" units="years"/> 
 %for trait in config["traits"]:
             <attr name="${trait}">
-                ${config["trait_dict"][sequence][trait]}
+                ${config["trait_dict"][sequence.id][trait]}
             </attr>
 %endfor
         </taxon>
@@ -45,6 +45,19 @@ taxa_list = taxon_info["sequences"]%>
 		<taxa idref="taxa_${name}"/>
 		<constantSize idref="initialDemo"/>
 	</coalescentSimulator>
+	
+	<treeModel id="treeModel">
+		<coalescentTree idref="startingTree_${name}"/>
+		<rootHeight>
+			<parameter id="treeModel_${name}.rootHeight"/>
+		</rootHeight>
+		<nodeHeights internalNodes="true">
+			<parameter id="treeModel_${name}.internalNodeHeights"/>
+		</nodeHeights>
+		<nodeHeights internalNodes="true" rootNode="true">
+			<parameter id="treeModel_${name}.allInternalNodeHeights"/>
+		</nodeHeights>
+	</treeModel>
 %endfor
 %endif
 

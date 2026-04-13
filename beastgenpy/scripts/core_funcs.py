@@ -44,18 +44,29 @@ def parse_fasta(fasta_list, codon_partitioning):
             taxa.add(seq.id)
 
     fasta_info = []
-    for fasta,cp in zip(fastas, cps):
-        inner_dict = {}
-        inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
+    if cps != "":
+        for fasta,cp in zip(fastas, cps):
+            inner_dict = {}
+            inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
 
-        inner_dict["sequences"] = pull_sequences(fasta)
-        if cp == "1":
-            inner_dict["codon_partitioning"] = True 
-        else:
+            inner_dict["sequences"] = pull_sequences(fasta)
+            if cp == "1":
+                inner_dict["codon_partitioning"] = True 
+            else:
+                inner_dict["codon_partitioning"] = False
+            
+            fasta_info.append(inner_dict)
+    else:
+        for fasta in fastas:
+            inner_dict = {}
+            inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
+
+            inner_dict["sequences"] = pull_sequences(fasta)
+           
             inner_dict["codon_partitioning"] = False
+            
+            fasta_info.append(inner_dict)
         
-        fasta_info.append(inner_dict)
- 
     return taxa, fasta_info
 
 def pull_sequences(fasta):
