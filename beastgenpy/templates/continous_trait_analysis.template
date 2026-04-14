@@ -77,9 +77,83 @@ taxa_list = taxon_info["sequences"]%>
 		<nodeHeights internalNodes="true" rootNode="true">
 			<parameter id="treeModel_${name}.allInternalNodeHeights"/>
 		</nodeHeights>
+		##UNCERTAINTY IN THE TIPS
 	</treeModel>
+
+	<!-- Statistic for height of the root of the tree                            -->
+	<treeHeightStatistic id="rootHeight_${name}">
+		<treeModel idref="treeModel_${name}"/>
+	</treeHeightStatistic>
+
+	<!-- Statistic for time of most recent common ancestor of tree               -->
+	<tmrcaStatistic id="age(root)_${name}" absolute="true">
+		<treeModel idref="treeModel_${name}"/>
+	</tmrcaStatistic>
+	<!-- Statistic for sum of the branch lengths of the tree (tree length)       -->
+	<treeLengthStatistic id="treeLength_${name}">
+		<treeModel idref="treeModel_${name}"/>
+	</treeLengthStatistic>
+
 %endfor
 %endif
+
+%if not config["fixed_tree"]:
+%if config["growth_model"] == "skygrid":
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>
+	<!-- Generate a gmrfSkyGridLikelihood for the Bayesian SkyGrid process       -->
+	<gmrfSkyGridLikelihood id="skygrid_${name}">
+		<populationSizes>
+			<!-- skygrid.logPopSize is in log units unlike other popSize                 -->
+			<parameter id="skygrid_${name}.logPopSize" dimension="${config['gridpoints']}" value="1.0"/>
+		</populationSizes>
+		<precisionParameter>
+			<parameter id="skygrid_${name}.precision" value="0.1" lower="0.0"/>
+		</precisionParameter>
+		<numGridPoints>
+			<parameter id="skygrid_${name}.numGridPoints" value="${config['gridpoints']-1}.0"/>
+		</numGridPoints>
+		<cutOff>
+			<parameter id="skygrid_${name}.cutOff" value="${config['cutoff']}"/>
+		</cutOff>
+		<populationTree>
+			<treeModel idref="treeModel_${name}"/>
+		</populationTree>
+	</gmrfSkyGridLikelihood>
+
+	<gmrfSkyrideGradient id="gmrfGradientPop_${name}" wrtParameter="logPopulationSizes">
+		<gmrfSkyGridLikelihood idref="skygrid_${name}"/>
+	</gmrfSkyrideGradient>
+	
+	<compoundParameter id="skygrid_${name}.parameters">
+		<parameter idref="skygrid_${name}.precision"/>
+		<parameter idref="skygrid_${name}.logPopSize"/>
+	</compoundParameter>
+	
+	<gmrfSkyrideGradient id="gmrfGradientPrec_${name}" wrtParameter="precision">
+		<gmrfSkyGridLikelihood idref="skygrid_${name}"/>
+	</gmrfSkyrideGradient>
+	
+	<gammaPrior id="skygrid_${name}.precision.prior" shape="0.001" scale="1000" offset="0.0">
+		<parameter idref="skygrid_${name}.precision"/>
+	</gammaPrior>
+	
+	<jointGradient id="joint.skygrid_${name}.precision">
+		<gmrfSkyrideGradient idref="gmrfGradientPrec_${name}"/>
+		<gradient>
+			<gammaPrior idref="skygrid_${name}.precision.prior"/>
+			<parameter idref="skygrid_${name}.precision"/>
+		</gradient>
+	</jointGradient>
+	
+	<compoundGradient id="full.skygrid_${name}.gradient">
+		<jointGradient idref="joint.skygrid_${name}.precision"/>
+		<gmrfSkyrideGradient idref="gmrfGradientPop_${name}"/>
+	</compoundGradient>
+%endfor
+%endif
+
+
 
 <!-- START Multivariate diffusion model                                      -->
 	<multivariateDiffusionModel id="${config["overall_trait"]}.diffusionModel">
