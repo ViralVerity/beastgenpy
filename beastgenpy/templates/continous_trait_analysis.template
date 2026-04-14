@@ -8,12 +8,12 @@
    <!-- The list of taxa to be analysed (can also include dates/ages).          -->
 %for taxon_info in config["fasta"]:
 <%name = taxon_info["name"]
-taxa_list = taxon_info["sequences"]%>
+taxa_list = taxon_info["sequences"]%>\
     <!-- ntax=${len(taxa_list)}                                             -->
     <taxa id="taxa_${name}">
 %for sequence in taxa_list: 
         <taxon id="${sequence.id}">
-<% date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>
+<% date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
             <date value="${date}" direction="forwards" units="years" uncertainty="${uncertainty}"/> 
 %for trait in config["traits"]:
             <attr name="${trait}">
@@ -27,8 +27,8 @@ taxa_list = taxon_info["sequences"]%>
 
 %if not config["fixed_tree"]:
 %for taxon_info in config["fasta"]:
-	<%name = taxon_info["name"]%>
-	<alignment id="alignment_${name}" dataType="nucleotide">
+	<%name = taxon_info["name"]%>\
+	<alignment id="alignment_${name}" dataType="nucleotide">\
 %for sequence in taxon_info["sequences"]:
 		<sequence>
             <taxon idref="${sequence.id}"/>
@@ -43,8 +43,8 @@ taxa_list = taxon_info["sequences"]%>
 %endfor
 %endif
 
-%if config["tree_file_dict"]:
-<!-- Insert starting tree blocks -->  
+%if config["fixed_tree"]:
+<!-- Insert fixed tree blocks -->  
 %for tree_name, tree_file in config["tree_file_dict"].items():
 	<empiricalTreeDistributionModel id="${tree_name}" fileName="${tree_file}">
 		<taxa idref="taxa_${tree_name}"/>
@@ -77,7 +77,16 @@ taxa_list = taxon_info["sequences"]%>
 		<nodeHeights internalNodes="true" rootNode="true">
 			<parameter id="treeModel_${name}.allInternalNodeHeights"/>
 		</nodeHeights>
-		##UNCERTAINTY IN THE TIPS
+<%taxa_list = taxon_info["sequences"]%>
+%for sequence in taxa_list:
+<%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
+%if uncertainty == 1.0:	
+		<leafHeight taxon="${sequence.id}">
+			<parameter id="age(${sequence.id})"/>
+		</leafHeight>
+%endif
+%endfor
+
 	</treeModel>
 
 	<!-- Statistic for height of the root of the tree                            -->
@@ -299,7 +308,7 @@ taxa_list = taxon_info["sequences"]%>
 	<!-- END Multivariate diffusion model                                        -->	
 	
 %for sequence in config["uncertain_polygons"]:
-	<leafTraitParameter id="${sequence}.trait" taxon="{sequence}">
+	<leafTraitParameter id="${sequence}.trait" taxon="${sequence}">
 		<treeModel idref="treeModel"/>
 		<parameter idref="leaf.location"/>
 	</leafTraitParameter>
@@ -309,10 +318,18 @@ taxa_list = taxon_info["sequences"]%>
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
 %for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>
+<% name = taxon_info["name"]%>\
 		<scaleOperator scaleFactor="0.75" weight="30">
 			<parameter idref="coordinates.diffusion.rates.${name}"/>
 		</scaleOperator> 
+%for sequence in taxa_list:
+<%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
+%if uncertainty == 1.0:	
+   		<uniformOperator weight="0.001">
+			<parameter idref="age(${sequence.id})"/>
+		</uniformOperator>
+%endif
+%endfor
 %endfor
 		<!-- Insert precisionGibbsOperator blocks --> 
 		<precisionGibbsOperator weight="2">
@@ -322,6 +339,8 @@ taxa_list = taxon_info["sequences"]%>
 		%endfor
 			<multivariateWishartPrior idref="coordinates.precisionPrior"/> 
 		</precisionGibbsOperator> 
+
+		
 
     </operators>
     

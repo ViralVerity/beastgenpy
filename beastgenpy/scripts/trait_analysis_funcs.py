@@ -1,7 +1,7 @@
 from collections import defaultdict
 import csv
 import os
-
+import sys
 
 def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_delimiter, config):
 #error catching:
@@ -107,6 +107,10 @@ def continuous_phylogeography_processing(trait_file):
 def sort_uncertain_polygons(polygon_dir):
     seqs = []
     for file in os.listdir(polygon_dir):
-        seqs.append(file.split(".")[0])
+        if file.endswith(".kml"):
+            seqs.append(file.rstrip(".kml"))
+        else:
+            sys.exit(-1)
+            sys.stderr("expecting .kml files for polygons")
 
     return seqs
