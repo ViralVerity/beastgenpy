@@ -35,9 +35,12 @@ def main(sysargs = sys.argv[1:]):
     tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
 
     growth_model_group = parser.add_argument_group("Growth model analysis")
-    growth_model_group.add_argument("--growth-model", dest="growth_model")
+    growth_model_group.add_argument("--growth-model", dest="growth_model", default="skygrid")
     growth_model_group.add_argument("--sg-cutoff", dest="sg_cutoff")
     growth_model_group.add_argument("--sg-gridpoints", dest="sg_gridpoints")
+
+    clock_model_group = parser.add_argument_group("clock models")
+    clock_model_group.add_argument("--clock-model", dest="clock_model", default="relaxed")
 
     trait_group = parser.add_argument_group("trait_analysis_group")
     trait_group.add_argument("--dta", action="store_true", help="Flag to run a discrete trait analysis")
@@ -132,6 +135,8 @@ def main(sysargs = sys.argv[1:]):
     if config["growth_model"] == "skygrid":
         config["gridpoints"] = int(args.sg_gridpoints)
         config["cutoff"] = args.sg_cutoff
+
+    config["clock_model"] = args.clock_model
 
     if args.file_stem:
         config["file_stem"] = args.file_stem

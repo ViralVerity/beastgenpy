@@ -10,3 +10,5 @@ Broadly speaking it's to help with ones that can be difficult to make in BEAUti 
 4. Fixed trees
 
 And combinations of the above
+
+Currently only provides HMC Skygrid and ucld relaxed clock. 

@@ -98,8 +98,8 @@ taxa_list = taxon_info["sequences"]%>
 %endif
 
 %if not config["fixed_tree"]:
-%if config["growth_model"] == "skygrid":
 %for taxon_info in config["fasta"]:
+%if config["growth_model"] == "skygrid":
 <%name = taxon_info["name"]%>
 	<!-- Generate a gmrfSkyGridLikelihood for the Bayesian SkyGrid process       -->
 	<gmrfSkyGridLikelihood id="skygrid_${name}">
@@ -150,8 +150,73 @@ taxa_list = taxon_info["sequences"]%>
 		<jointGradient idref="joint.skygrid_${name}.precision"/>
 		<gmrfSkyrideGradient idref="gmrfGradientPop_${name}"/>
 	</compoundGradient>
-%endfor
 %endif
+%if config["clock_model"] == "relaxed":
+    <discretizedBranchRates id="branchRates_${name}">
+		<treeModel idref="treeModel_${name}"/>
+		<distribution>
+			<logNormalDistributionModel meanInRealSpace="true">
+				<mean>
+					<parameter id="ucld.mean_${name}" value="1.0" lower="0.0"/>
+				</mean>
+				<stdev>
+					<parameter id="ucld.stdev_${name}" value="0.3333333333333333" lower="0.0"/>
+				</stdev>
+			</logNormalDistributionModel>
+		</distribution>
+		<rateCategories>
+			<parameter id="branchRates.categories_${name}"/>
+		</rateCategories>
+	</discretizedBranchRates>
+	<rateStatistic id="meanRate" name="meanRate_${name}" mode="mean" internal="true" external="true">
+		<treeModel idref="treeModel_${name}"/>
+		<discretizedBranchRates idref="branchRates_${name}"/>
+	</rateStatistic>
+	<rateStatistic id="coefficientOfVariatio_${name}n" name="coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
+		<treeModel idref="treeMode_${name}l"/>
+		<discretizedBranchRates idref="branchRates_${name}"/>
+	</rateStatistic>
+	<rateCovarianceStatistic id="covariance_${name}" name="covariance">
+		<treeModel idref="treeModel_${name}"/>
+		<discretizedBranchRates idref="branchRates_${name}"/>
+	</rateCovarianceStatistic>
+%endif
+%endfor
+	<gtrModel id="gtr">
+		<frequencies>
+			<frequencyModel dataType="nucleotide">
+				<frequencies>
+					<parameter id="frequencies" value="0.25 0.25 0.25 0.25"/>
+				</frequencies>
+			</frequencyModel>
+		</frequencies>
+		<rates>
+			<parameter id="gtr.rates" dimension="6" value="1.0" lower="0.0"/>
+		</rates>
+	</gtrModel>
+	<siteModel id="siteModel">
+		<substitutionModel>
+			<gtrModel idref="gtr"/>
+		</substitutionModel>
+		<gammaShape gammaCategories="4">
+			<parameter id="alpha" value="0.5" lower="0.0"/>
+		</gammaShape>
+	</siteModel>
+	<statistic id="mu" name="mu">
+		<siteModel idref="siteModel"/>
+	</statistic>
+
+%for taxon_info in config["fasta"]:
+
+	<treeLikelihood id="treeLikelihood" useAmbiguities="false">
+		<patterns idref="patterns_${name}"/>
+		<treeModel idref="treeModel_${name}"/>
+		<siteModel idref="siteModel_${name}"/>
+		<discretizedBranchRates idref="branchRates_${name}"/>
+	</treeLikelihood>
+$endfor
+%endif
+
 
 
 
