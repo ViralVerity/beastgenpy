@@ -12,8 +12,9 @@ taxa_list = taxon_info["sequences"]%>
     <!-- ntax=${len(taxa_list)}                                             -->
     <taxa id="taxa_${name}">
 %for sequence in taxa_list: 
-        <taxon id="${sequence}">
-            <date value="${core_funcs.decimal_date(sequence.id.split("|")[-1])}" direction="forwards" units="years"/> 
+        <taxon id="${sequence.id}">
+<% date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>
+            <date value="${date}" direction="forwards" units="years" uncertainty="${uncertainty}"/> 
 %for trait in config["traits"]:
             <attr name="${trait}">
                 ${config["trait_dict"][sequence.id][trait]}
@@ -24,7 +25,22 @@ taxa_list = taxon_info["sequences"]%>
     </taxa> 
 %endfor
 
-#patterns
+%if not config["fixed_tree"]:
+%for taxon_info in config["fasta"]:
+	<%name = taxon_info["name"]%>
+	<alignment id="alignment_${name}" dataType="nucleotide">
+%for sequence in taxon_info["sequences"]:
+		<sequence>
+            <taxon idref="${sequence.id}"/>
+            ${sequence.seq}
+        </sequence>
+%endfor
+
+	<patterns id="patterns" from="1" strip="false">
+		<alignment idref="alignment_${name}"/>
+	</patterns>
+%endfor
+%endif
 
 %if config["tree_file_dict"]:
 <!-- Insert starting tree blocks -->  

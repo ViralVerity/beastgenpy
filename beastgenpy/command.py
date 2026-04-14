@@ -136,7 +136,7 @@ def main(sysargs = sys.argv[1:]):
     if args.file_stem:
         config["file_stem"] = args.file_stem
     else:
-        config["file_stem"] = args.template.split(".")[0]
+        config["file_stem"] = args.template.split("/")[-1].split(".")[0]
 
 
     ##general options
