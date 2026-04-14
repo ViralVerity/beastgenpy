@@ -27,8 +27,8 @@ taxa_list = taxon_info["sequences"]%>\
 
 %if not config["fixed_tree"]:
 %for taxon_info in config["fasta"]:
-	<%name = taxon_info["name"]%>\
-	<alignment id="alignment_${name}" dataType="nucleotide">\
+	<%name = taxon_info["name"]%>
+	<alignment id="alignment_${name}" dataType="nucleotide">
 %for sequence in taxon_info["sequences"]:
 		<sequence>
             <taxon idref="${sequence.id}"/>
@@ -181,7 +181,7 @@ taxa_list = taxon_info["sequences"]%>\
 		<treeModel idref="treeModel_${name}"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateStatistic>
-	<rateStatistic id="coefficientOfVariatio_${name}n" name="coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
+	<rateStatistic id="coefficientOfVariation_${name}" name="coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
 		<treeModel idref="treeMode_${name}l"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateStatistic>
