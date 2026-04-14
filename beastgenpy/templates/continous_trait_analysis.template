@@ -410,16 +410,50 @@ taxa_list = taxon_info["sequences"]%>\
     <mcmc id="mcmc" chainLength="${config["chain_length"]}" autoOptimize="true">
 		<joint id="joint">
 			<prior id="prior">
+
+%if not config["fixed_tree"]:
+				<dirichletPrior alpha="1.0" sumsTo="6.0">
+					<parameter idref="gtr.rates"/>
+				</dirichletPrior>
+				<dirichletPrior alpha="1.0" sumsTo="1.0">
+					<parameter idref="frequencies"/>
+				</dirichletPrior>
+				<exponentialPrior mean="0.5" offset="0.0">
+					<parameter idref="alpha"/>
+				</exponentialPrior>
 %for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>
-				<distributionLikelihood idref="coordinates.diffusion.prior.${name}"/>
+<% name = taxon_info["name"]%>\
+				<exponentialPrior mean="0.3333333333333333" offset="0.0">
+					<parameter idref="ucld.stdev_${name}"/>
+				</exponentialPrior>
+				
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="ucld.mean_${name}"/>
+					</ctmcScale>
+					<treeModel idref="treeModel_${name}"/>
+				</ctmcScalePrior>
+
+				<gammaPrior idref="skygrid_${name}.precision.prior"/>
+				<gmrfSkyGridLikelihood idref="skygrid_${name}"/>
+				<discretizedBranchRates idref="branchRates_${name}"/>
 %endfor
-				<multivariateWishartPrior idref="coordinates.precisionPrior"/> 
+%endif
+				<multivariateWishartPrior idref="${config["overall_trait"]}.precisionPrior"/> 
+
+%if config["uncertain_polygons"]:
+				<geoDistributionCollection id="allGeoDistributions">
+%for taxon in config["uncertain_polygons"]:
+				<flatGeoSpatialPrior idref="${taxon}_polygons"/>
+%endfor
+%endif
             </prior>
+
 			<likelihood id="likelihood">
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>
-				<multivariateTraitLikelihood idref="coordinates.traitLikelihood.${name}"/>
+				<treeLikelihood idref="treeLikelihood_${name}"/>
+				<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood_${name}"/>
 %endfor
 			</likelihood>
 		</joint>
