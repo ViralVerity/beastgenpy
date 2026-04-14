@@ -307,11 +307,16 @@ taxa_list = taxon_info["sequences"]%>\
 
 	<!-- END Multivariate diffusion model                                        -->	
 	
-%for sequence in config["uncertain_polygons"]:
-	<leafTraitParameter id="${sequence}.trait" taxon="${sequence}">
+%for taxon in config["uncertain_polygons"]:
+	<leafTraitParameter id="${taxon}.trait" taxon="${taxon}">
 		<treeModel idref="treeModel"/>
 		<parameter idref="leaf.location"/>
 	</leafTraitParameter>
+	<flatGeoSpatialPrior id="${taxon}_polygons" taxon="${taxon}" kmlFileName="polygons/${taxon}.kml" inside="true" union="true" cache="true">
+		<data>
+			<parameter idref="${taxon}.trait"/>
+		</data>
+	</flatGeoSpatialPrior>
 %endfor
 
 	
