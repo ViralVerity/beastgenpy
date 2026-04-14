@@ -59,7 +59,7 @@ def main(sysargs = sys.argv[1:]):
 
     trait_group.add_argument("--continuous-phylogeog", action="store_true",dest="continuous_phylogeog", help="Flag to run a continuous phylogeographic analysis")
     trait_group.add_argument("--continuous-trait-file", dest="continuous_trait_file", help="File containing coordinate values under headers 'taxon,longitude,latitude' for each sequence for continuous phylogeographic analysis")
-
+    trait_group.add_argument("--polygon-dir", help="directory with polygons for uncertainty estimation", dest="polygon_dir")
 
     gen_group = parser.add_argument_group('General options')
     gen_group.add_argument("--template", required=True, help="Template for making the XML")
@@ -123,6 +123,10 @@ def main(sysargs = sys.argv[1:]):
     if config["continuous_phylogeog"]:
         #this template should be generalised to be fixed tree or not fixed, and multi/not multi
         config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.continuous_trait_file)
+        if args.polygon_dir:
+            config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
+        else:
+            config["uncertain_polygons"] = []
     else:
         config["overall_trait"] = False
 

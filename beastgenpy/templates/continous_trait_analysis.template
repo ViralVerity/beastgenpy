@@ -298,6 +298,13 @@ taxa_list = taxon_info["sequences"]%>
 
 	<!-- END Multivariate diffusion model                                        -->	
 	
+%for sequence in config["uncertain_polygons"]:
+	<leafTraitParameter id="${sequence}.trait" taxon="{sequence}">
+		<treeModel idref="treeModel"/>
+		<parameter idref="leaf.location"/>
+	</leafTraitParameter>
+%endfor
+
 	
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
