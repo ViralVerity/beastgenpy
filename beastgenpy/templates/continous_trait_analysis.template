@@ -251,17 +251,9 @@ taxa_list = taxon_info["sequences"]%>\
 	<!-- END Multivariate diffusion model                                        -->
 %for taxon_info in config["fasta"]:
 <%name = taxon_info["name"]%>
-<!-- START Multivariate diffusion model                                      -->
-	<arbitraryBranchRates id="${config["overall_trait"]}.diffusion.branchRates_${name}">
+<!-- START Multivariate diffusion model                                     -->
+	<discretizedBranchRates id="${config["overall_trait"]}.diffusionRates_${name}">
 		<treeModel idref="treeModel_${name}"/>
-		<rates>
-			<parameter id="${config["overall_trait"]}.diffusion.rates_${name}" lower="0.0"/>
-		</rates>
-	</arbitraryBranchRates>
-	<distributionLikelihood id="${config["overall_trait"]}.diffusion.prior_${name}">
-		<data>
-			<parameter idref="${config["overall_trait"]}.diffusion.rates_${name}"/>
-		</data>
 		<distribution>
 			<onePGammaDistributionModel>
 				<shape>
@@ -270,11 +262,14 @@ taxa_list = taxon_info["sequences"]%>\
 				</shape>
 			</onePGammaDistributionModel>
 		</distribution>
-	</distributionLikelihood>
+		<rateCategories>
+			<parameter id="${config["overall_trait"]}.rrwCategories_${name}"/>
+		</rateCategories>
+	</discretizedBranchRates>
 	
 	<multivariateTraitLikelihood id="${config["overall_trait"]}.traitLikelihood_${name}" traitName="${config["overall_trait"]}" useTreeLength="true" scaleByTime="true" reportAsMultivariate="true" reciprocalRates="true" integrateInternalTraits="true">
 		<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/>
-		<treeModel idref="${name}"/>
+		<treeModel idref="treeModel_${name}"/>
 		<traitParameter>
 			<parameter id="leaf.${config["overall_trait"]}_${name}"/>
 		</traitParameter>
@@ -283,14 +278,12 @@ taxa_list = taxon_info["sequences"]%>\
 				<parameter value="0.0 0.0"/>
 			</meanParameter>
 			<priorSampleSize>
-				<parameter value="0.000001"/>
+				<parameter value="0.001"/>
 			</priorSampleSize>
 		</conjugateRootPrior>
 		<discretizedBranchRates idref="${config["overall_trait"]}.diffusionRates_${name}"/>
 	</multivariateTraitLikelihood>
-	<matrixInverse id="location.varCovar_${name}">
-		<matrixParameter idref="location.precision"/>
-	</matrixInverse>
+	
 	<continuousDiffusionStatistic id="${config["overall_trait"]}.diffusionRate_${name}" greatCircleDistance="true">
 		<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood_${name}"/>
 	</continuousDiffusionStatistic>
@@ -310,7 +303,7 @@ taxa_list = taxon_info["sequences"]%>\
 %for taxon in config["uncertain_polygons"]:
 	<leafTraitParameter id="${taxon}.trait" taxon="${taxon}">
 		<treeModel idref="treeModel"/>
-		<parameter idref="leaf.location"/>
+		<parameter idref="leaf.${config["overall_trait"]}"/>
 	</leafTraitParameter>
 	<flatGeoSpatialPrior id="${taxon}_polygons" taxon="${taxon}" kmlFileName="polygons/${taxon}.kml" inside="true" union="true" cache="true">
 		<data>
@@ -322,10 +315,69 @@ taxa_list = taxon_info["sequences"]%>\
 	
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
+
+		<deltaExchange delta="0.01" weight="0.1">
+			<parameter idref="gtr.rates"/>
+		</deltaExchange>
+		<deltaExchange delta="0.01" weight="0.1">
+			<parameter idref="frequencies"/>
+		</deltaExchange>
+		<scaleOperator scaleFactor="0.75" weight="1">
+			<parameter idref="alpha"/>
+		</scaleOperator>	  
+
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>\
+
+		<hamiltonianMonteCarloOperator weight="5" nSteps="50" stepSize="1E-2" mode="vanilla" 
+                                        autoOptimize="true" gradientCheckCount="1" gradientCheckTolerance="1E-1" 
+                                        preconditioning="none" preconditioningUpdateFrequency="100">
+	 		<compoundGradient idref="full.skygrid_${name}.gradient"/>
+			<compoundParameter idref="skygrid_${name}.parameters"/>
+			<signTransform start="1" end="1">
+				<compoundParameter idref="skygrid_${name}.parameters"/>
+			</signTransform>
+ 		</hamiltonianMonteCarloOperator>
+
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="ucld.mean_${name}"/>
+		</scaleOperator>
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="ucld.stdev_${name}"/>
+		</scaleOperator>
+		
+		<upDownOperator scaleFactor="0.75" weight="3">
+			<up>
+				<parameter idref="treeModel.allInternalNodeHeights_${name}"/>
+			</up>
+			<down>
+				<parameter idref="ucld.mean_${name}"/>
+			</down>
+		</upDownOperator>
+		<swapOperator size="1" weight="10" autoOptimize="false">
+			<parameter idref="branchRates.categories_${name}"/>
+		</swapOperator>
+		<uniformIntegerOperator weight="10">
+			<parameter idref="branchRates.categories_${name}"/>
+		</uniformIntegerOperator>
+		
+		<uniformOperator weight="9">
+			<parameter idref="treeModel.internalNodeHeights_${name}"/>
+		</uniformOperator>
+		
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="treeModel.rootHeight_${name}"/>
+		</scaleOperator>
+		
+		<subtreeLeap size="1.0" weight="823">
+			<treeModel idref="treeModel_${name}"/>
+		</subtreeLeap>
+		<fixedHeightSubtreePruneRegraft weight="82.3">
+			<treeModel idref="treeModel_${name}"/>
+		</fixedHeightSubtreePruneRegraft>
+
 		<scaleOperator scaleFactor="0.75" weight="30">
-			<parameter idref="coordinates.diffusion.rates.${name}"/>
+			<parameter idref="${config["overall_trait"]}.diffusion.rates.${name}"/>
 		</scaleOperator> 
 %for sequence in taxa_list:
 <%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
@@ -338,15 +390,19 @@ taxa_list = taxon_info["sequences"]%>\
 %endfor
 		<!-- Insert precisionGibbsOperator blocks --> 
 		<precisionGibbsOperator weight="2">
-		%for taxon_info in config["fasta"]:
+%for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>
-			<multivariateTraitLikelihood idref="coordinates.traitLikelihood.${name}"/>
-		%endfor
-			<multivariateWishartPrior idref="coordinates.precisionPrior"/> 
+			<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood_${name}"/>
+%endfor
+			<multivariateWishartPrior idref="${config["overall_trait"]}.precisionPrior"/> 
 		</precisionGibbsOperator> 
 
-		
-
+%for taxon in config["uncertain_polygons"]:
+		<uniformGeoSpatialOperator weight="0.01">
+			<parameter idref="${taxon}.trait"/>
+			<flatGeoSpatialPrior idref="${taxon}_polygons"/>
+		</uniformGeoSpatialOperator>
+%endfor
     </operators>
     
     <mcmc id="mcmc" chainLength="${config["chain_length"]}" autoOptimize="true">
