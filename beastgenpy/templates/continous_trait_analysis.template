@@ -35,6 +35,7 @@ taxa_list = taxon_info["sequences"]%>
             ${sequence.seq}
         </sequence>
 %endfor
+	</alignment>
 
 	<patterns id="patterns" from="1" strip="false">
 		<alignment idref="alignment_${name}"/>
@@ -49,7 +50,10 @@ taxa_list = taxon_info["sequences"]%>
 		<taxa idref="taxa_${tree_name}"/>
 	</empiricalTreeDistributionModel> 
 %endfor
-<constantSize id="initialDemo" units="years">
+%endif
+
+%if not config['fixed_tree'] and not config['starting_tree']:
+	<constantSize id="initialDemo" units="years">
 		<populationSize>
 			<parameter id="initialDemo.popSize" value="100.0"/>
 		</populationSize>
@@ -62,7 +66,7 @@ taxa_list = taxon_info["sequences"]%>
 		<constantSize idref="initialDemo"/>
 	</coalescentSimulator>
 	
-	<treeModel id="treeModel">
+	<treeModel id="treeModel_${name}">
 		<coalescentTree idref="startingTree_${name}"/>
 		<rootHeight>
 			<parameter id="treeModel_${name}.rootHeight"/>
