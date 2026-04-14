@@ -207,7 +207,6 @@ taxa_list = taxon_info["sequences"]%>
 	</statistic>
 
 %for taxon_info in config["fasta"]:
-
 	<treeLikelihood id="treeLikelihood" useAmbiguities="false">
 		<patterns idref="patterns_${name}"/>
 		<treeModel idref="treeModel_${name}"/>
@@ -216,8 +215,6 @@ taxa_list = taxon_info["sequences"]%>
 	</treeLikelihood>
 $endfor
 %endif
-
-
 
 
 <!-- START Multivariate diffusion model                                      -->
@@ -243,29 +240,22 @@ $endfor
 	</multivariateWishartPrior>
 
 	<!-- END Multivariate diffusion model                                        -->
-
-<%
-if config["tree_file_dict"]:
-	tree_lst = config["tree_file_dict"].keys()
-else:
-	tree_lst = ["treeModel"]
-%>
-%for tree_name in tree_lst:
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>
 <!-- START Multivariate diffusion model                                      -->
-	<arbitraryBranchRates id="${config["overall_trait"]}.diffusion.branchRates.${tree_name}">
-		<treeModel idref="${tree_name}"/>
+	<arbitraryBranchRates id="${config["overall_trait"]}.diffusion.branchRates_${name}">
+		<treeModel idref="treeModel_${name}"/>
 		<rates>
-			<parameter id="${config["overall_trait"]}.diffusion.rates.${tree_name}" lower="0.0"/>
+			<parameter id="${config["overall_trait"]}.diffusion.rates_${name" lower="0.0"/>
 		</rates>
 	</arbitraryBranchRates>
-	<distributionLikelihood id="${config["overall_trait"]}.diffusion.prior.${tree_name}">
+	<distributionLikelihood id="${config["overall_trait"]}.diffusion.prior_${name">
 		<data>
-			<parameter idref="${config["overall_trait"]}.diffusion.rates.${tree_name}"/>
+			<parameter idref="${config["overall_trait"]}.diffusion.rates_${name"/>
 		</data>
 		<distribution>
 			<onePGammaDistributionModel>
 				<shape>
-
 					<!-- half DF (i.e., df = 1)                                                  -->
 					<parameter value="0.5"/>
 				</shape>
@@ -273,11 +263,11 @@ else:
 		</distribution>
 	</distributionLikelihood>
 	
-	<multivariateTraitLikelihood id="${config["overall_trait"]}.traitLikelihood.${tree_name}" traitName="${config["overall_trait"]}" useTreeLength="true" scaleByTime="true" reportAsMultivariate="true" reciprocalRates="true" integrateInternalTraits="true">
+	<multivariateTraitLikelihood id="${config["overall_trait"]}.traitLikelihood_${name}" traitName="${config["overall_trait"]}" useTreeLength="true" scaleByTime="true" reportAsMultivariate="true" reciprocalRates="true" integrateInternalTraits="true">
 		<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/>
-		<treeModel idref="${tree_name}"/>
+		<treeModel idref="${name}"/>
 		<traitParameter>
-			<parameter id="leaf.${config["overall_trait"]}.${tree_name}"/>
+			<parameter id="leaf.${config["overall_trait"]}_${name}"/>
 		</traitParameter>
 		<conjugateRootPrior>
 			<meanParameter>
@@ -287,12 +277,11 @@ else:
 				<parameter value="0.000001"/>
 			</priorSampleSize>
 		</conjugateRootPrior>
-		<arbitraryBranchRates idref="${config["overall_trait"]}.diffusion.branchRates.${tree_name}"/>
+		<arbitraryBranchRates idref="${config["overall_trait"]}.diffusion.branchRates_${name}"/>
 	</multivariateTraitLikelihood>
-	<continuousDiffusionStatistic id="${config["overall_trait"]}.diffusionRate.${tree_name}" greatCircleDistance="true">
-		<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood.${tree_name}"/>
+	<continuousDiffusionStatistic id="${config["overall_trait"]}.diffusionRate_${name}" greatCircleDistance="true">
+		<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood_${name}"/>
 	</continuousDiffusionStatistic>
-
 %endfor
 	
 	
