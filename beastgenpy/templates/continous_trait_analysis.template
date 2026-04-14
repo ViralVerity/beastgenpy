@@ -316,6 +316,7 @@ taxa_list = taxon_info["sequences"]%>\
 	<!-- Define operators                                                        --> 
     <operators id="operators" optimizationSchedule="log">
 
+%if not config["fixed_tree"]:
 		<deltaExchange delta="0.01" weight="0.1">
 			<parameter idref="gtr.rates"/>
 		</deltaExchange>
@@ -324,11 +325,12 @@ taxa_list = taxon_info["sequences"]%>\
 		</deltaExchange>
 		<scaleOperator scaleFactor="0.75" weight="1">
 			<parameter idref="alpha"/>
-		</scaleOperator>	  
+		</scaleOperator>	
+%endif  
 
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>\
-
+%if not config["fixed_tree"]:
 		<hamiltonianMonteCarloOperator weight="5" nSteps="50" stepSize="1E-2" mode="vanilla" 
                                         autoOptimize="true" gradientCheckCount="1" gradientCheckTolerance="1E-1" 
                                         preconditioning="none" preconditioningUpdateFrequency="100">
@@ -375,7 +377,7 @@ taxa_list = taxon_info["sequences"]%>\
 		<fixedHeightSubtreePruneRegraft weight="82.3">
 			<treeModel idref="treeModel_${name}"/>
 		</fixedHeightSubtreePruneRegraft>
-
+%endif
 		<scaleOperator scaleFactor="0.75" weight="30">
 			<parameter idref="${config["overall_trait"]}.diffusion.rates.${name}"/>
 		</scaleOperator> 
