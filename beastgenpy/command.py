@@ -133,11 +133,15 @@ def main(sysargs = sys.argv[1:]):
         config["gridpoints"] = int(args.sg_gridpoints)
         config["cutoff"] = args.sg_cutoff
 
+    if args.file_stem:
+        config["file_stem"] = args.file_stem
+    else:
+        config["file_stem"] = args.template.split(".")[0]
+
 
     ##general options
     config["chain_length"] = args.chain_length
     config["log_every"] = args.log_every
-    config["file_stem"] = args.file_stem
     config["template"] = args.template
 
     # for k,v in config.items():
