@@ -477,31 +477,48 @@ taxa_list = taxon_info["sequences"]%>\
 			<prior idref="prior"/> 
 			<likelihood idref="likelihood"/> 
 			<!-- START Multivariate diffusion model                                      --> 
-			<matrixParameter idref="coordinates.precision"/> 
-			<correlation idref="coordinates.correlation"/> 
-			<matrixInverse idref="coordinates.varCovar"/> 
+			<matrixParameter idref="${config["overall_trait"]}.precision"/> 
+			<correlation idref="${config["overall_trait"]}.correlation"/> 
+			<matrixInverse idref="${config["overall_trait"]}.varCovar"/> 
+%if not config["fixed_tree"]:
+			<parameter idref="gtr.rates"/>
+			<parameter idref="frequencies"/>
+%endif
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>
-			<!-- Insert continuousDiffusionStatistic blocks 2 --> 
-				<continuousDiffusionStatistic idref="coordinates.diffusionRate.${name}"/>
-			<!-- Insert multivariateTraitLikelihood blocks 2 --> 
-				<multivariateTraitLikelihood idref="coordinates.traitLikelihood.${name}"/>
+%if not config['fixed_tree']:
+			<parameter idref="treeModel.rootHeight_${name}"/>
+			<tmrcaStatistic idref="age(root)_${name}"/>
+			<treeLengthStatistic idref="treeLength_${name}"/>
+			<parameter idref="skygrid_${name}.precision"/>
+			<parameter idref="skygrid_${name}.logPopSize"/>
+			<gmrfSkyGridLikelihood idref="skygrid_${name}"/>
+			<parameter idref="ucld.mean_${name}"/>
+			<parameter idref="ucld.stdev_${name}"/>
+			<rateStatistic idref="meanRate_${name}"/>
+			<rateStatistic idref="coefficientOfVariation_${name}"/>
+			<rateCovarianceStatistic idref="covariance_${name}"/>
+			<treeLikelihood idref="treeLikelihood_${name}"/>
+%endif
+			<continuousDiffusionStatistic idref="${config["overall_trait"]}.diffusionRate_${name}"/>
+			<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood_${name}"/>
 %endfor
+
 		</log>
 
 		<!-- write tree log to file                                                  -->
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>
 		<logTree id="treeFileLog_${name}" logEvery="${config["log_every"]}" nexusFormat="true" fileName="${name}.trees" sortTranslationTable="true">
-			<treeModel idref="treeModel.${name}"/>
+			<treeModel idref="treeModel_${name}"/>
 			<joint idref="joint"/> 
 			<trait name="${config["overall_trait"]}" tag="${config["overall_trait"]}"> 
-				<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood.${name}"/>
+				<multivariateTraitLikelihood idref="${config["overall_trait"]}.traitLikelihood_${name}"/>
 			</trait> 
-			<multivariateDiffusionModel idref="coordinates.diffusionModel"/> 
-			<trait name="rate" tag="${config["overall_trait"]}.rate"> 
-				<arbitraryBranchRates idref="${config["overall_trait"]}.diffusion.branchRates.${name}"/>
-			</trait> 
+			<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/> 
+			<trait name="rate" tag="rate">
+				<discretizedBranchRates idref="branchRates_${name}"/>
+			</trait>
 		</logTree> 
 %endfor
 	</mcmc>
