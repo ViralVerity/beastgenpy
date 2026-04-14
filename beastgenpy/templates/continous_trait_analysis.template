@@ -37,7 +37,7 @@ taxa_list = taxon_info["sequences"]%>\
 %endfor
 	</alignment>
 
-	<patterns id="patterns" from="1" strip="false">
+	<patterns id="patterns_${name}" from="1" strip="false">
 		<alignment idref="alignment_${name}"/>
 	</patterns>
 %endfor
@@ -177,12 +177,12 @@ taxa_list = taxon_info["sequences"]%>\
 			<parameter id="branchRates.categories_${name}"/>
 		</rateCategories>
 	</discretizedBranchRates>
-	<rateStatistic id="meanRate" name="meanRate_${name}" mode="mean" internal="true" external="true">
+	<rateStatistic id="meanRate_${name}" name="meanRate_${name}" mode="mean" internal="true" external="true">
 		<treeModel idref="treeModel_${name}"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateStatistic>
 	<rateStatistic id="coefficientOfVariation_${name}" name="coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
-		<treeModel idref="treeMode_${name}l"/>
+		<treeModel idref="treeModel_${name}"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateStatistic>
 	<rateCovarianceStatistic id="covariance_${name}" name="covariance">
@@ -216,10 +216,11 @@ taxa_list = taxon_info["sequences"]%>\
 	</statistic>
 
 %for taxon_info in config["fasta"]:
-	<treeLikelihood id="treeLikelihood" useAmbiguities="false">
+<%name = taxon_info["name"]%>\
+	<treeLikelihood id="treeLikelihood_${name}" useAmbiguities="false">
 		<patterns idref="patterns_${name}"/>
 		<treeModel idref="treeModel_${name}"/>
-		<siteModel idref="siteModel_${name}"/>
+		<siteModel idref="siteModel"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</treeLikelihood>
 %endfor
@@ -301,9 +302,10 @@ taxa_list = taxon_info["sequences"]%>\
 	<!-- END Multivariate diffusion model                                        -->	
 	
 %for taxon in config["uncertain_polygons"]:
+<%name=config["seq_to_tree"][taxon]%>\
 	<leafTraitParameter id="${taxon}.trait" taxon="${taxon}">
-		<treeModel idref="treeModel"/>
-		<parameter idref="leaf.${config["overall_trait"]}"/>
+		<treeModel idref="treeModel_${name}"/>
+		<parameter idref="leaf.${config["overall_trait"]}_${name}"/>
 	</leafTraitParameter>
 	<flatGeoSpatialPrior id="${taxon}_polygons" taxon="${taxon}" kmlFileName="polygons/${taxon}.kml" inside="true" union="true" cache="true">
 		<data>
@@ -350,7 +352,7 @@ taxa_list = taxon_info["sequences"]%>\
 		
 		<upDownOperator scaleFactor="0.75" weight="3">
 			<up>
-				<parameter idref="treeModel.allInternalNodeHeights_${name}"/>
+				<parameter idref="treeModel_${name}.allInternalNodeHeights"/>
 			</up>
 			<down>
 				<parameter idref="ucld.mean_${name}"/>
@@ -364,11 +366,11 @@ taxa_list = taxon_info["sequences"]%>\
 		</uniformIntegerOperator>
 		
 		<uniformOperator weight="9">
-			<parameter idref="treeModel.internalNodeHeights_${name}"/>
+			<parameter idref="treeModel_${name}.internalNodeHeights"/>
 		</uniformOperator>
 		
 		<scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="treeModel.rootHeight_${name}"/>
+			<parameter idref="treeModel_${name}.rootHeight"/>
 		</scaleOperator>
 		
 		<subtreeLeap size="1.0" weight="823">
@@ -379,7 +381,7 @@ taxa_list = taxon_info["sequences"]%>\
 		</fixedHeightSubtreePruneRegraft>
 %endif
 		<scaleOperator scaleFactor="0.75" weight="30">
-			<parameter idref="${config["overall_trait"]}.diffusion.rates.${name}"/>
+			<parameter idref="${config["overall_trait"]}.diffusionRates_${name}"/>
 		</scaleOperator> 
 %for sequence in taxa_list:
 <%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
@@ -444,8 +446,9 @@ taxa_list = taxon_info["sequences"]%>\
 %if config["uncertain_polygons"]:
 				<geoDistributionCollection id="allGeoDistributions">
 %for taxon in config["uncertain_polygons"]:
-				<flatGeoSpatialPrior idref="${taxon}_polygons"/>
+					<flatGeoSpatialPrior idref="${taxon}_polygons"/>
 %endfor
+				</geoDistributionCollection>
 %endif
             </prior>
 

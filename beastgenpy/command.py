@@ -90,7 +90,7 @@ def main(sysargs = sys.argv[1:]):
         config["taxa"], config["fasta"] = core_funcs.parse_fasta(args.fasta, args.codon_partitioning)
     else:
         config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir, args.fixed_tree_file, config)
-        config["fasta"] = False
+        config["fasta"] = False #NB this won't work with cont template as it is because it always loops through this. Make taxa also have the name then generalise template to use taxa instead of fasta
 
     if config["fixed_tree"] or config["starting_tree"]:
         config["tree_name"], config["tree_file_dict"], config["newick_dict"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
@@ -130,6 +130,7 @@ def main(sysargs = sys.argv[1:]):
     else:
         config["overall_trait"] = False
 
+
     if not config["continuous_phylogeog"] and not config["dta"]:  
         config["traits"] = False
         config["trait_dict"] = False
@@ -147,14 +148,13 @@ def main(sysargs = sys.argv[1:]):
     else:
         config["file_stem"] = args.template.split("/")[-1].split(".")[0]
 
-
+    config["seq_to_tree"] = core_funcs.connect_seq_to_tree(config["fasta"])
+    
     ##general options
     config["chain_length"] = args.chain_length
     config["log_every"] = args.log_every
     config["template"] = args.template
 
-    # for k,v in config.items():
-    #     print(f'{k}: {v}')
 
     mytemplate = Template(filename=config["template"], strict_undefined=True)
 

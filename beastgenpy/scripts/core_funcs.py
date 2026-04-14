@@ -159,7 +159,19 @@ def fixed_tree_parsing(fixed_tree_file, starting_tree_file, fixed_tree_dir, conf
 
     return tree_name, tree_file_dict, newick_dict
     
-       
+def connect_seq_to_tree(seq_info):
+    seq_to_tree = {}
+    for tree in seq_info:
+    
+        name = tree["name"]
+        seq_list = tree["sequences"] #right now these are sequence objects, will generalise to strings
+
+        for seq in seq_list:
+            seq_to_tree[seq.id] = name
+
+    return seq_to_tree
+    
+          
 
 
 
