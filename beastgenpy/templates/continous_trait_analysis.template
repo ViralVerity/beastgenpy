@@ -380,9 +380,13 @@ taxa_list = taxon_info["sequences"]%>\
 			<treeModel idref="treeModel_${name}"/>
 		</fixedHeightSubtreePruneRegraft>
 %endif
-		<scaleOperator scaleFactor="0.75" weight="30">
-			<parameter idref="${config["overall_trait"]}.diffusionRates_${name}"/>
-		</scaleOperator> 
+		<swapOperator size="1" weight="30" autoOptimize="false">
+			<parameter idref="${config["overall_trait"]}.rrwCategories_${name}"/>
+		</swapOperator>
+		<uniformIntegerOperator weight="10">
+			<parameter idref="${config["overall_trait"]}.rrwCategories_${name}"/>
+		</uniformIntegerOperator>
+
 %for sequence in taxa_list:
 <%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
 %if uncertainty == 1.0:	
@@ -490,7 +494,7 @@ taxa_list = taxon_info["sequences"]%>\
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>
 %if not config['fixed_tree']:
-			<parameter idref="treeModel.rootHeight_${name}"/>
+			<parameter idref="treeModel_${name}.rootHeight"/>
 			<tmrcaStatistic idref="age(root)_${name}"/>
 			<treeLengthStatistic idref="treeLength_${name}"/>
 			<parameter idref="skygrid_${name}.precision"/>
