@@ -114,3 +114,11 @@ def sort_uncertain_polygons(polygon_dir):
                 print("file with no kml for polygons found")
 
     return seqs
+
+def check_seqs_present(config):
+
+    for fasta_info in config["fasta"]:
+        for seq in fasta_info["sequences"]:
+            if seq.id not in config["trait_dict"]:
+                sys.stderr.write(f"{seq.id} not in trait file\n")
+                sys.exit(-1)
