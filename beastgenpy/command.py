@@ -12,6 +12,7 @@ from collections import defaultdict
 import glm_funcs as glm_funcs
 import core_funcs as core_funcs
 import trait_analysis_funcs as trait_funcs
+import error_checks as error_checks
 
 cwd = os.getcwd()
 thisdir = os.path.abspath(os.path.dirname(__file__))
@@ -122,7 +123,7 @@ def main(sysargs = sys.argv[1:]):
 
     if config["continuous_phylogeog"]:
         config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.continuous_trait_file)
-        trait_funcs.check_seqs_present(config)
+        error_checks.check_seqs_present(config)
         if args.polygon_dir:
             config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
         else:

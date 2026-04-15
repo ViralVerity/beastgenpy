@@ -13,7 +13,8 @@ setup(name='beastgenpy',
             "beastgenpy/scripts/core_funcs.py",
             "beastgenpy/scripts/glm_funcs.py",
             "beastgenpy/scripts/taxon_set_funcs.py",
-            "beastgenpy/scripts/trait_analysis_funcs.py"
+            "beastgenpy/scripts/trait_analysis_funcs.py",
+            "beastgenpy/scripts/error_checks.py"
             ],
       install_requires=[
             "mako>=1.1",
