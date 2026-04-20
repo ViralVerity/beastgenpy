@@ -29,7 +29,7 @@ def main(sysargs = sys.argv[1:]):
     tree_group = parser.add_argument_group("Tree options")
     tree_group.add_argument("--multi-tree", action="store_true", dest="multi_tree", help="Perform joint analysis on multiple monophyletic trees")
     tree_group.add_argument("--fixed-tree", action="store_true", dest="fixed_tree", help="Perform analysis on fixed tree or trees")
-    tree_group.add_argument("--fixed-tree-file", dest="fixed_tree_file", help="File containing single fixed tree in newick format") 
+    tree_group.add_argument("--fixed-tree-file", dest="fixed_tree_file", help="File single fixed tree or empirical trees") 
     tree_group.add_argument("--fixed-tree-dir", dest='fixed_tree_dir', help="Directory containing multiple fixed trees in newick format")
     tree_group.add_argument("--starting-tree", action="store_true", dest="starting_tree", help="flag for adding a starting tree")
     tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
