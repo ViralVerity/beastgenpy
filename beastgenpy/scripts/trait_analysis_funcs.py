@@ -1,7 +1,7 @@
 from collections import defaultdict
 import csv
-
-
+import os
+import sys
 
 def parse_discrete_traits(traits, trait_file, trait_loc_in_name_input, trait_delimiter, config):
 #error catching:
@@ -104,4 +104,13 @@ def continuous_phylogeography_processing(trait_file):
 
     return traits, trait_dict, overall_trait
 
+def sort_uncertain_polygons(polygon_dir):
+    seqs = []
+    for file in os.listdir(polygon_dir):
+        if not file.endswith(".DS_Store"):
+            if file.endswith(".kml"):
+                seqs.append(file.rstrip(".kml"))
+            else:
+                print("file with no kml for polygons found")
 
+    return seqs

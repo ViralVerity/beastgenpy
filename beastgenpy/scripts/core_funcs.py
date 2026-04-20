@@ -3,6 +3,7 @@ import datetime as dt
 import csv
 import os
 from collections import defaultdict
+import sys
 
 def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm, epoch, continuous_phylogeog):
 
@@ -18,36 +19,67 @@ def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm,
 
 def decimal_date(date_string):
 
-    date = dt.datetime.strptime(date_string, "%Y-%m-%d").date()
+    if len(date_string.split("-")) == 3:
+        date = dt.datetime.strptime(date_string, "%Y-%m-%d").date()
+        uncertainty = 0.0
+    elif len(date_string.split("-")) == 2:
+        date = dt.datetime.strptime(date_string, "%Y-%m").date()
+        uncertainty = 0.08333333333333333
+    elif len(date_string.split("-")) == 1:
+        date = dt.datetime.strptime(date_string, "%Y").date()
+        uncertainty = 1.0
+    else:
+        sys.stderr("date not in recognised format")
+        sys.exit(-1)
+    
     start = dt.date(date.year, 1, 1).toordinal()
     year_length = dt.date(date.year+1, 1, 1).toordinal() - start
     final_date = date.year + float(date.toordinal() - start) / year_length
 
-    return str(final_date)
+    return str(final_date), uncertainty
 
 
 def parse_fasta(fasta_list, codon_partitioning):
 
     fastas = fasta_list.split(",")
-    cps = codon_partitioning.split(",")
+    if codon_partitioning:
+        cps = codon_partitioning.split(",")
+    else:
+        cps = ""
 
-    taxa = []
-    for seq in SeqIO.parse(fastas[0],"fasta"):
-        taxa.append(seq.id)
+    taxa = set()
+    if len(fastas) > 1:
+        for fasta in fastas:
+            for seq in SeqIO.parse(fasta,"fasta"):
+                taxa.add(seq.id)
+    else:
+        for seq in SeqIO.parse(fastas[0],"fasta"):
+            taxa.add(seq.id)
 
     fasta_info = []
-    for fasta,cp in zip(fastas, cps):
-        inner_dict = {}
-        inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
+    if cps != "":
+        for fasta,cp in zip(fastas, cps):
+            inner_dict = {}
+            inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
 
-        inner_dict["sequences"] = pull_sequences(fasta)
-        if cp == "1":
-            inner_dict["codon_partitioning"] = True 
-        else:
+            inner_dict["sequences"] = pull_sequences(fasta)
+            if cp == "1":
+                inner_dict["codon_partitioning"] = True 
+            else:
+                inner_dict["codon_partitioning"] = False
+            
+            fasta_info.append(inner_dict)
+    else:
+        for fasta in fastas:
+            inner_dict = {}
+            inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
+
+            inner_dict["sequences"] = pull_sequences(fasta)
+           
             inner_dict["codon_partitioning"] = False
+            
+            fasta_info.append(inner_dict)
         
-        fasta_info.append(inner_dict)
- 
     return taxa, fasta_info
 
 def pull_sequences(fasta):
@@ -125,7 +157,19 @@ def fixed_tree_parsing(fixed_tree_file, starting_tree_file, fixed_tree_dir, conf
 
     return tree_name, tree_file_dict, newick_dict, tree_file
     
-       
+def connect_seq_to_tree(seq_info):
+    seq_to_tree = {}
+    for tree in seq_info:
+    
+        name = tree["name"]
+        seq_list = tree["sequences"] #right now these are sequence objects, will generalise to strings
+
+        for seq in seq_list:
+            seq_to_tree[seq.id] = name
+
+    return seq_to_tree
+    
+          
 
 
 

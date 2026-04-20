@@ -35,9 +35,12 @@ def main(sysargs = sys.argv[1:]):
     tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
 
     growth_model_group = parser.add_argument_group("Growth model analysis")
-    growth_model_group.add_argument("--growth-model", dest="growth_model")
+    growth_model_group.add_argument("--growth-model", dest="growth_model", default="skygrid")
     growth_model_group.add_argument("--sg-cutoff", dest="sg_cutoff")
     growth_model_group.add_argument("--sg-gridpoints", dest="sg_gridpoints")
+
+    clock_model_group = parser.add_argument_group("clock models")
+    clock_model_group.add_argument("--clock-model", dest="clock_model", default="relaxed")
 
     trait_group = parser.add_argument_group("trait_analysis_group")
     trait_group.add_argument("--dta", action="store_true", help="Flag to run a discrete trait analysis")
@@ -56,7 +59,7 @@ def main(sysargs = sys.argv[1:]):
 
     trait_group.add_argument("--continuous-phylogeog", action="store_true",dest="continuous_phylogeog", help="Flag to run a continuous phylogeographic analysis")
     trait_group.add_argument("--continuous-trait-file", dest="continuous_trait_file", help="File containing coordinate values under headers 'taxon,longitude,latitude' for each sequence for continuous phylogeographic analysis")
-
+    trait_group.add_argument("--polygon-dir", help="directory with polygons for uncertainty estimation", dest="polygon_dir")
 
     gen_group = parser.add_argument_group('General options')
     gen_group.add_argument("--template", required=True, help="Template for making the XML")
@@ -87,7 +90,7 @@ def main(sysargs = sys.argv[1:]):
         config["taxa"], config["fasta"] = core_funcs.parse_fasta(args.fasta, args.codon_partitioning)
     else:
         config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir, args.fixed_tree_file, config)
-        config["fasta"] = False
+        config["fasta"] = False #NB this won't work with cont template as it is because it always loops through this. Make taxa also have the name then generalise template to use taxa instead of fasta
 
     if config["fixed_tree"] or config["starting_tree"]:
         config["tree_name"], config["tree_file_dict"], config["newick_dict"], config["tree_file"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
@@ -120,8 +123,13 @@ def main(sysargs = sys.argv[1:]):
     if config["continuous_phylogeog"]:
         #this template should be generalised to be fixed tree or not fixed, and multi/not multi
         config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.continuous_trait_file)
+        if args.polygon_dir:
+            config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
+        else:
+            config["uncertain_polygons"] = []
     else:
         config["overall_trait"] = False
+
 
     if not config["continuous_phylogeog"] and not config["dta"]:  
         config["traits"] = False
@@ -133,15 +141,20 @@ def main(sysargs = sys.argv[1:]):
         config["gridpoints"] = int(args.sg_gridpoints)
         config["cutoff"] = args.sg_cutoff
 
+    config["clock_model"] = args.clock_model
 
+    if args.file_stem:
+        config["file_stem"] = args.file_stem
+    else:
+        config["file_stem"] = args.template.split("/")[-1].split(".")[0]
+
+    config["seq_to_tree"] = core_funcs.connect_seq_to_tree(config["fasta"])
+    
     ##general options
     config["chain_length"] = args.chain_length
     config["log_every"] = args.log_every
-    config["file_stem"] = args.file_stem
     config["template"] = args.template
 
-    # for k,v in config.items():
-    #     print(f'{k}: {v}')
 
     mytemplate = Template(filename=config["template"], strict_undefined=True)
 
