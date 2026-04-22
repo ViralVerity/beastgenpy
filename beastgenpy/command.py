@@ -121,10 +121,10 @@ def main(sysargs = sys.argv[1:]):
         config["transition_times"] = []
 
     if config["continuous_phylogeog"]:
-        #this template should be generalised to be fixed tree or not fixed, and multi/not multi
         config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.continuous_trait_file)
         if args.polygon_dir:
             config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
+            config["polygon_dir"] = args.polygon_dir
         else:
             config["uncertain_polygons"] = []
     else:

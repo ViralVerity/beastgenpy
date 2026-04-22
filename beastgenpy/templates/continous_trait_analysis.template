@@ -189,6 +189,18 @@ taxa_list = taxon_info["sequences"]%>\
 		<treeModel idref="treeModel_${name}"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateCovarianceStatistic>
+%else:
+	<!-- The strict clock (Uniform rates across branches)                        -->
+	<strictClockBranchRates id="${name}.branchRates">
+		<rate>
+			<parameter id="${name}.clock.rate" value="0.001" lower="0.0"/>
+		</rate>
+	</strictClockBranchRates>
+	
+	<rateStatistic id="${name}.meanRate" name="${name}.meanRate" mode="mean" internal="true" external="true">
+		<treeModel idref="treeModel_${name}"/>
+		<strictClockBranchRates idref="${name}.branchRates"/>
+	</rateStatistic>
 %endif
 %endfor
 	<gtrModel id="gtr">
@@ -221,7 +233,11 @@ taxa_list = taxon_info["sequences"]%>\
 		<patterns idref="patterns_${name}"/>
 		<treeModel idref="treeModel_${name}"/>
 		<siteModel idref="siteModel"/>
+%if config["clock_model"] == "relaxed":
 		<discretizedBranchRates idref="branchRates_${name}"/>
+%else:
+		<strictClockBranchRates idref="${name}.branchRates"/>
+%endif
 	</treeLikelihood>
 %endfor
 %endif
@@ -307,7 +323,7 @@ taxa_list = taxon_info["sequences"]%>\
 		<treeModel idref="treeModel_${name}"/>
 		<parameter idref="leaf.${config["overall_trait"]}_${name}"/>
 	</leafTraitParameter>
-	<flatGeoSpatialPrior id="${taxon}_polygons" taxon="${taxon}" kmlFileName="polygons/${taxon}.kml" inside="true" union="true" cache="true">
+	<flatGeoSpatialPrior id="${taxon}_polygons" taxon="${taxon}" kmlFileName="${config['polygon_dir']}/${taxon}.kml" inside="true" union="true" cache="true">
 		<data>
 			<parameter idref="${taxon}.trait"/>
 		</data>
@@ -343,6 +359,7 @@ taxa_list = taxon_info["sequences"]%>\
 			</signTransform>
  		</hamiltonianMonteCarloOperator>
 
+%if config["clock_model"] == "relaxed":
 		<scaleOperator scaleFactor="0.75" weight="3">
 			<parameter idref="ucld.mean_${name}"/>
 		</scaleOperator>
@@ -364,6 +381,19 @@ taxa_list = taxon_info["sequences"]%>\
 		<uniformIntegerOperator weight="10">
 			<parameter idref="branchRates.categories_${name}"/>
 		</uniformIntegerOperator>
+%else:
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="${name}.clock.rate"/>
+		</scaleOperator>
+		<upDownOperator scaleFactor="0.75" weight="3">
+			<up>
+				<parameter idref="treeModel_${name}.allInternalNodeHeights"/>
+			</up>
+			<down>
+				<parameter idref="${name}.clock.rate"/>
+			</down>
+		</upDownOperator>
+%endif
 		
 		<uniformOperator weight="9">
 			<parameter idref="treeModel_${name}.internalNodeHeights"/>
@@ -429,6 +459,7 @@ taxa_list = taxon_info["sequences"]%>\
 				</exponentialPrior>
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>\
+%if config["clock_model"] == "relaxed":
 				<exponentialPrior mean="0.3333333333333333" offset="0.0">
 					<parameter idref="ucld.stdev_${name}"/>
 				</exponentialPrior>
@@ -439,10 +470,20 @@ taxa_list = taxon_info["sequences"]%>\
 					</ctmcScale>
 					<treeModel idref="treeModel_${name}"/>
 				</ctmcScalePrior>
-
+				<discretizedBranchRates idref="branchRates_${name}"/>
+%else:
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="${name}.clock.rate"/>
+					</ctmcScale>
+					<treeModel idref="treeModel_${name}"/>
+				</ctmcScalePrior>
+				<strictClockBranchRates idref="${name}.branchRates"/>
+%endif
 				<gammaPrior idref="skygrid_${name}.precision.prior"/>
 				<gmrfSkyGridLikelihood idref="skygrid_${name}"/>
-				<discretizedBranchRates idref="branchRates_${name}"/>
+				
+
 %endfor
 %endif
 				<multivariateWishartPrior idref="${config["overall_trait"]}.precisionPrior"/> 
@@ -500,11 +541,15 @@ taxa_list = taxon_info["sequences"]%>\
 			<parameter idref="skygrid_${name}.precision"/>
 			<parameter idref="skygrid_${name}.logPopSize"/>
 			<gmrfSkyGridLikelihood idref="skygrid_${name}"/>
+%if config["clock_model"] == "relaxed":
 			<parameter idref="ucld.mean_${name}"/>
 			<parameter idref="ucld.stdev_${name}"/>
 			<rateStatistic idref="meanRate_${name}"/>
 			<rateStatistic idref="coefficientOfVariation_${name}"/>
 			<rateCovarianceStatistic idref="covariance_${name}"/>
+%else:
+			<parameter idref="${name}.clock.rate"/>
+%endif
 			<treeLikelihood idref="treeLikelihood_${name}"/>
 %endif
 			<continuousDiffusionStatistic idref="${config["overall_trait"]}.diffusionRate_${name}"/>
@@ -524,8 +569,12 @@ taxa_list = taxon_info["sequences"]%>\
 			</trait> 
 			<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/> 
 			<trait name="rate" tag="rate">
+%if config["clock_model"] == "relaxed":
 				<discretizedBranchRates idref="branchRates_${name}"/>
-			</trait>
+%else:  
+				<strictClockBranchRates idref="${name}.branchRates"/>
+%endif
+				</trait>
 		</logTree> 
 %endfor
 	</mcmc>
