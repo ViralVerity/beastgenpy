@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="yes"?>
+<%import core_funcs%>
+<!--generated with beastgenpy v1.0
+
+Author: Verity Hill, University of Glasgow -->
+
+<beast>
+<%include file="taxa_components/taxon_block.xml" args="config=config"/>
+<%include file="taxa_components/alignment_block.xml" args="config=config"/>

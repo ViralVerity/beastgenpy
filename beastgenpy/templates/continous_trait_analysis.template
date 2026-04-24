@@ -1,7 +1,5 @@
 <?xml version="1.0" standalone="yes"?>
-<%
-	    import core_funcs
-%> 
+<%import core_funcs%> 
 <!--generated with beastgen.py-->
 
 <beast>

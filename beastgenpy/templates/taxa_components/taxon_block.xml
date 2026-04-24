@@ -1,0 +1,22 @@
+<%import core_funcs%>
+    <!-- The list of taxa to be analysed (can also include dates/ages).          -->
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]
+taxa_list = taxon_info["sequences"]%>\
+    <!-- ntax=${len(taxa_list)}                                             -->
+    <taxa id="${name}.taxa">
+%for sequence in taxa_list: 
+        <taxon id="${sequence.id}">
+<% date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
+            <date value="${date}" direction="forwards" units="years" uncertainty="${uncertainty}"/> 
+%if config["traits"]:
+%for trait in config["traits"]:
+            <attr name="${trait}">
+                ${config["trait_dict"][sequence.id][trait]}
+            </attr>
+%endfor
+%endif
+        </taxon>
+%endfor 
+    </taxa> 
+%endfor
