@@ -1,0 +1,13 @@
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>\
+	<treeLikelihood id="${name}.treeLikelihood" useAmbiguities="false">
+		<patterns idref="${name}.patterns"/>
+		<treeModel idref="${name}.treeModel"/>
+		<siteModel idref="siteModel"/>
+%if config["clock_model"] == "relaxed":
+		<discretizedBranchRates idref="${name}.branchRates"/>
+%else:
+		<strictClockBranchRates idref="${name}.branchRates"/>
+%endif
+	</treeLikelihood>
+%endfor

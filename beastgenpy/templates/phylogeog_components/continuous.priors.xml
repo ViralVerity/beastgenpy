@@ -1,0 +1,9 @@
+				<multivariateWishartPrior idref="${config["overall_trait"]}.precisionPrior"/> 
+
+%if config["uncertain_polygons"]:
+				<geoDistributionCollection id="allGeoDistributions">
+%for taxon in config["uncertain_polygons"]:
+					<flatGeoSpatialPrior idref="${taxon}_polygons"/>
+%endfor
+				</geoDistributionCollection>
+%endif

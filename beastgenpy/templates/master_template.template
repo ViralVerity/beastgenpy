@@ -14,4 +14,52 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="tree_components/starting_tree.xml" args="config=config"/>
 %else:
 <%include file="tree_components/new_tree.xml" args="config=config"/>
+<%include file="population_models/${config['growth_model']}.definition.xml" args="config=config"/>
+<%include file="clock_models/${config['clock_model']}.definition.xml" args="config=config"/>
+<%include file="substitution_models/${config['subs_model']}.definition.xml" args="config=config"/>
+<%include file="tree_components/treelikelihood.xml" args="config=config"/>
 %endif
+
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.definition.xml" args="config=config"/>
+%elif config["dta"]: 
+<%include file="phylogeog_components/discrete.definition.xml" args="config=config"/>
+%endif
+
+<!-- Define operators                                                        --> 
+    <operators id="operators" optimizationSchedule="log">
+
+%if not config["fixed_tree"]:
+<%include file="substitution_models/${config['subs_model']}.operators.xml" args="config=config"/>
+<%include file="clock_models/${config['clock_model']}.operators.xml" args="config=config"/>
+<%include file="substitution_models/${config['subs_model']}.operators.xml" args="config=config"/>
+<%include file="tree_components/tree.operators.xml" args="config=config"/>
+<%include file="taxa_components/taxa.operators.xml" args="config=config"/>
+%endif
+
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.operators.xml" args="config=config"/>
+%elif config["dta"]: 
+<%include file="phylogeog_components/discrete.operators.xml" args="config=config"/>
+%endif
+
+    </operators>
+
+
+<mcmc id="mcmc" chainLength="${config["chain_length"]}" autoOptimize="true">
+		<joint id="joint">
+			<prior id="prior">
+
+%if not config["fixed_tree"]: 
+<%include file="substitution_models/${config['subs_model']}.priors.xml" args="config=config"/>
+<%include file="clock_models/${config['clock_model']}.priors.xml" args="config=config"/>
+<%include file="substitution_models/${config['subs_model']}.priors.xml" args="config=config"/>
+%endif
+
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.priors.xml" args="config=config"/>
+%elif config["dta"]: 
+<%include file="phylogeog_components/discrete.priors.xml" args="config=config"/>
+%endif
+
+            </prior>

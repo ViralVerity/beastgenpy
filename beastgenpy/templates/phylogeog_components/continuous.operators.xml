@@ -1,0 +1,24 @@
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+        <swapOperator size="1" weight="30" autoOptimize="false">
+			<parameter idref="${name}.${config["overall_trait"]}.rrwCategories"/>
+		</swapOperator>
+		<uniformIntegerOperator weight="10">
+			<parameter idref="${name}.${config["overall_trait"]}.rrwCategories"/>
+		</uniformIntegerOperator>
+
+		<!-- Insert precisionGibbsOperator blocks --> 
+		<precisionGibbsOperator weight="2">
+			<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
+%endfor
+			<multivariateWishartPrior idref="${config["overall_trait"]}.precisionPrior"/> 
+		</precisionGibbsOperator> 
+
+%if config["uncertain_polygons"]:
+%for taxon in config["uncertain_polygons"]:
+		<uniformGeoSpatialOperator weight="0.01">
+			<parameter idref="${taxon}.trait"/>
+			<flatGeoSpatialPrior idref="${taxon}.polygons"/>
+		</uniformGeoSpatialOperator>
+%endfor
+%endif

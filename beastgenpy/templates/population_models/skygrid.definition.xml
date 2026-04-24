@@ -1,0 +1,52 @@
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>
+	<!-- Generate a gmrfSkyGridLikelihood for the Bayesian SkyGrid process       -->
+	<gmrfSkyGridLikelihood id="${name}.skygrid">
+		<populationSizes>
+			<!-- skygrid.logPopSize is in log units unlike other popSize                 -->
+			<parameter id="${name}.skygrid.logPopSize" dimension="${config['gridpoints']}" value="1.0"/>
+		</populationSizes>
+		<precisionParameter>
+			<parameter id="${name}.skygrid.precision" value="0.1" lower="0.0"/>
+		</precisionParameter>
+		<numGridPoints>
+			<parameter id="${name}.skygrid.numGridPoints" value="${config['gridpoints']-1}.0"/>
+		</numGridPoints>
+		<cutOff>
+			<parameter id="${name}.skygrid.cutOff" value="${config['cutoff']}"/>
+		</cutOff>
+		<populationTree>
+			<treeModel idref="${name}.treeModel"/>
+		</populationTree>
+	</gmrfSkyGridLikelihood>
+
+	<gmrfSkyrideGradient id="${name}.gmrfGradientPop" wrtParameter="logPopulationSizes">
+		<gmrfSkyGridLikelihood idref="${name}.skygrid"/>
+	</gmrfSkyrideGradient>
+	
+	<compoundParameter id="${name}.skygrid.parameters">
+		<parameter idref="${name}.skygrid.precision"/>
+		<parameter idref="${name}.skygrid.logPopSize"/>
+	</compoundParameter>
+	
+	<gmrfSkyrideGradient id="${name}.gmrfGradientPrec" wrtParameter="precision">
+		<gmrfSkyGridLikelihood idref="${name}.skygrid"/>
+	</gmrfSkyrideGradient>
+	
+	<gammaPrior id="${name}.skygrid.precision.prior" shape="0.001" scale="1000" offset="0.0">
+		<parameter idref="${name}.skygrid.precision"/>
+	</gammaPrior>
+	
+	<jointGradient id="${name}.joint.skygrid.precision">
+		<gmrfSkyrideGradient idref="${name}.gmrfGradientPrec"/>
+		<gradient>
+			<gammaPrior idref="${name}.skygrid.precision.prior"/>
+			<parameter idref="${name}.skygrid.precision"/>
+		</gradient>
+	</jointGradient>
+	
+	<compoundGradient id="${name}.full.skygrid.gradient">
+		<jointGradient idref="${name}.joint.skygrid.precision"/>
+		<gmrfSkyrideGradient idref="${name}.gmrfGradientPop"/>
+	</compoundGradient>
+%endfor

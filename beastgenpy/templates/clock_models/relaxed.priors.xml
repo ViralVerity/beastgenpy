@@ -1,0 +1,14 @@
+                <exponentialPrior mean="0.3333333333333333" offset="0.0">
+					<parameter idref="ucld.stdev"/>
+				</exponentialPrior>
+				
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+				<ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="ucld.mean"/>
+					</ctmcScale>
+					<treeModel idref="${name}.treeModel"/>
+				</ctmcScalePrior>
+				<discretizedBranchRates idref="${name}.branchRates"/>
+%endfor

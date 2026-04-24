@@ -453,7 +453,7 @@ taxa_list = taxon_info["sequences"]%>\
 %for taxon in config["uncertain_polygons"]:
 		<uniformGeoSpatialOperator weight="0.01">
 			<parameter idref="${taxon}.trait"/>
-			<flatGeoSpatialPrior idref="${taxon}_polygons"/>
+			<flatGeoSpatialPrior idref="${taxon}.polygons"/>
 		</uniformGeoSpatialOperator>
 %endfor
     </operators>

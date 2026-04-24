@@ -1,0 +1,85 @@
+
+<!-- START Multivariate diffusion model                                      -->
+	<multivariateDiffusionModel id="${config["overall_trait"]}.diffusionModel">
+		<precisionMatrix>
+			<matrixParameter id="${config["overall_trait"]}.precision">
+				<parameter id="${config["overall_trait"]}.precision.col1" value="0.05 0.002"/>
+				<parameter id="${config["overall_trait"]}.precision.col2" value="0.002 0.05"/>
+			</matrixParameter>
+		</precisionMatrix>
+	</multivariateDiffusionModel>
+
+	<multivariateWishartPrior id="${config["overall_trait"]}.precisionPrior" df="2">
+		<scaleMatrix>
+			<matrixParameter>
+				<parameter value="1.0 0.0"/>
+				<parameter value="0.0 1.0"/>
+			</matrixParameter>
+		</scaleMatrix>
+		<data>
+			<parameter idref="${config["overall_trait"]}.precision"/>
+		</data>
+	</multivariateWishartPrior>
+
+	<!-- END Multivariate diffusion model                                        -->
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>
+<!-- START Multivariate diffusion model                                     -->
+	<discretizedBranchRates id="${name}.${config["overall_trait"]}.diffusionRates">
+		<treeModel idref="${name}.treeModel"/>
+		<distribution>
+			<onePGammaDistributionModel>
+				<shape>
+					<!-- half DF (i.e., df = 1)                                                  -->
+					<parameter value="0.5"/>
+				</shape>
+			</onePGammaDistributionModel>
+		</distribution>
+		<rateCategories>
+			<parameter id="${name}.${config["overall_trait"]}.rrwCategories"/>
+		</rateCategories>
+	</discretizedBranchRates>
+	
+	<multivariateTraitLikelihood id="${name}.${config["overall_trait"]}.traitLikelihood" traitName="${config["overall_trait"]}" useTreeLength="true" scaleByTime="true" reportAsMultivariate="true" reciprocalRates="true" integrateInternalTraits="true">
+		<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/>
+		<treeModel idref="${name}.treeModel"/>
+		<traitParameter>
+			<parameter id="${name}.leaf.${config["overall_trait"]}}"/>
+		</traitParameter>
+		<conjugateRootPrior>
+			<meanParameter>
+				<parameter value="0.0 0.0"/>
+			</meanParameter>
+			<priorSampleSize>
+				<parameter value="0.001"/>
+			</priorSampleSize>
+		</conjugateRootPrior>
+		<discretizedBranchRates idref="${name}.${config["overall_trait"]}.diffusionRates"/>
+	</multivariateTraitLikelihood>
+	
+	<continuousDiffusionStatistic id="${name}.${config["overall_trait"]}.diffusionRate" greatCircleDistance="true">
+		<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
+	</continuousDiffusionStatistic>
+%endfor
+	
+	
+	<correlation id="${config["overall_trait"]}.correlation" dimension1="1" dimension2="2">
+		<matrixParameter idref="${config["overall_trait"]}.precision"/>
+	</correlation>
+	<matrixInverse id="${config["overall_trait"]}.varCovar">
+		<matrixParameter idref="${config["overall_trait"]}.precision"/>
+	</matrixInverse>
+	<!-- END Multivariate diffusion model                                        -->	
+
+%for taxon in config["uncertain_polygons"]:
+<%name=config["seq_to_tree"][taxon]%>\
+	<leafTraitParameter id="${taxon}.trait" taxon="${taxon}">
+		<treeModel idref="${name}.treeModel"/>
+		<parameter idref="${name}.leaf.${config["overall_trait"]}}"/>
+	</leafTraitParameter>
+	<flatGeoSpatialPrior id="${taxon}.polygons" taxon="${taxon}" kmlFileName="${config['polygon_dir']}/${taxon}.kml" inside="true" union="true" cache="true">
+		<data>
+			<parameter idref="${taxon}.trait"/>
+		</data>
+	</flatGeoSpatialPrior>
+%endfor

@@ -1,0 +1,17 @@
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+        <uniformOperator weight="9">
+			<parameter idref="${name}.treeModel.internalNodeHeights"/>
+		</uniformOperator>
+		
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="${name}.treeModel.rootHeight"/>
+		</scaleOperator>
+		
+		<subtreeLeap size="1.0" weight="823">
+			<treeModel idref="${name}.treeModel"/>
+		</subtreeLeap>
+		<fixedHeightSubtreePruneRegraft weight="82.3">
+			<treeModel idref="${name}.treeModel"/>
+		</fixedHeightSubtreePruneRegraft>
+%endfor

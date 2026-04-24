@@ -16,3 +16,17 @@ def check_tree_dict(config):
     #if fixed/empirical check tree files are there
 
     return
+
+
+def check_names_models(config):
+
+    #that I've implemented skygrid/relaxed clock/whatever
+    #matches to existing template blocks
+
+    return
+
+def check_polygon_dir(config):
+
+    #polygon dir is findable 
+
+    return

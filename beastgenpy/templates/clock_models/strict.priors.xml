@@ -1,0 +1,10 @@
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+                <ctmcScalePrior>
+					<ctmcScale>
+						<parameter idref="clock.rate"/>
+					</ctmcScale>
+					<treeModel idref="${name}.treeModel"/>
+				</ctmcScalePrior>
+				<strictClockBranchRates idref="${name}.branchRates"/>
+%endfor

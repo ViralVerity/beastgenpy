@@ -44,6 +44,9 @@ def main(sysargs = sys.argv[1:]):
     clock_model_group = parser.add_argument_group("clock models")
     clock_model_group.add_argument("--clock-model", dest="clock_model", default="relaxed")
 
+    subs_model_group = parser.add_argument_group("subs models")
+    subs_model_group.add_argument("--subs-model", dest="subs_model", default="gtr")
+
     trait_group = parser.add_argument_group("trait_analysis_group")
     trait_group.add_argument("--dta", action="store_true", help="Flag to run a discrete trait analysis")
     trait_group.add_argument("--traits", help="Comma separated list of traits for discrete trait analysis")
@@ -144,6 +147,7 @@ def main(sysargs = sys.argv[1:]):
         config["cutoff"] = args.sg_cutoff
 
     config["clock_model"] = args.clock_model
+    config["subs_model"] = args.subs_model
 
     if args.file_stem:
         config["file_stem"] = args.file_stem
