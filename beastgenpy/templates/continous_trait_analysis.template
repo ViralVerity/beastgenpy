@@ -165,35 +165,51 @@ taxa_list = taxon_info["sequences"]%>\
 		<treeModel idref="treeModel_${name}"/>
 		<distribution>
 			<logNormalDistributionModel meanInRealSpace="true">
+%if loop.first:
 				<mean>
-					<parameter id="ucld.mean_${name}" value="1.0" lower="0.0"/>
+					<parameter id="ucld.mean" value="1.0" lower="0.0"/>
 				</mean>
 				<stdev>
-					<parameter id="ucld.stdev_${name}" value="0.3333333333333333" lower="0.0"/>
+					<parameter id="ucld.stdev" value="0.3333333333333333" lower="0.0"/>
 				</stdev>
+%else:
+<mean>
+				<parameter idref="ucld.mean"/>
+				</mean>
+				<stdev>
+					<parameter idref="ucld.stdev"/>
+				</stdev>
+%endif
 			</logNormalDistributionModel>
 		</distribution>
 		<rateCategories>
 			<parameter id="branchRates.categories_${name}"/>
 		</rateCategories>
 	</discretizedBranchRates>
-	<rateStatistic id="meanRate_${name}" name="meanRate_${name}" mode="mean" internal="true" external="true">
+
+	<rateStatistic id="meanRate_${name}" name="${name}.meanRate" mode="mean" internal="true" external="true">
 		<treeModel idref="treeModel_${name}"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateStatistic>
-	<rateStatistic id="coefficientOfVariation_${name}" name="coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
+	<rateStatistic id="coefficientOfVariation_${name}" name="${name}.coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
 		<treeModel idref="treeModel_${name}"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateStatistic>
-	<rateCovarianceStatistic id="covariance_${name}" name="covariance">
+	<rateCovarianceStatistic id="covariance_${name}" name="${name}.covariance">
 		<treeModel idref="treeModel_${name}"/>
 		<discretizedBranchRates idref="branchRates_${name}"/>
 	</rateCovarianceStatistic>
+
+
 %else:
 	<!-- The strict clock (Uniform rates across branches)                        -->
 	<strictClockBranchRates id="${name}.branchRates">
 		<rate>
-			<parameter id="${name}.clock.rate" value="0.001" lower="0.0"/>
+%if loop.first:
+			<parameter id="clock.rate" value="0.001" lower="0.0"/>
+%else:
+			<parameter idref="clock.rate"/>
+%endif
 		</rate>
 	</strictClockBranchRates>
 	
@@ -203,6 +219,7 @@ taxa_list = taxon_info["sequences"]%>\
 	</rateStatistic>
 %endif
 %endfor
+
 	<gtrModel id="gtr">
 		<frequencies>
 			<frequencyModel dataType="nucleotide">
@@ -361,10 +378,10 @@ taxa_list = taxon_info["sequences"]%>\
 
 %if config["clock_model"] == "relaxed":
 		<scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="ucld.mean_${name}"/>
+			<parameter idref="ucld.mean"/>
 		</scaleOperator>
 		<scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="ucld.stdev_${name}"/>
+			<parameter idref="ucld.stdev"/>
 		</scaleOperator>
 		
 		<upDownOperator scaleFactor="0.75" weight="3">
@@ -372,7 +389,7 @@ taxa_list = taxon_info["sequences"]%>\
 				<parameter idref="treeModel_${name}.allInternalNodeHeights"/>
 			</up>
 			<down>
-				<parameter idref="ucld.mean_${name}"/>
+				<parameter idref="ucld.mean"/>
 			</down>
 		</upDownOperator>
 		<swapOperator size="1" weight="10" autoOptimize="false">
@@ -457,16 +474,19 @@ taxa_list = taxon_info["sequences"]%>\
 				<exponentialPrior mean="0.5" offset="0.0">
 					<parameter idref="alpha"/>
 				</exponentialPrior>
+%if config["clock_model"] == "relaxed":
+				<exponentialPrior mean="0.3333333333333333" offset="0.0">
+					<parameter idref="ucld.stdev"/>
+				</exponentialPrior>
+%endif
+				
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>\
 %if config["clock_model"] == "relaxed":
-				<exponentialPrior mean="0.3333333333333333" offset="0.0">
-					<parameter idref="ucld.stdev_${name}"/>
-				</exponentialPrior>
 				
 				<ctmcScalePrior>
 					<ctmcScale>
-						<parameter idref="ucld.mean_${name}"/>
+						<parameter idref="ucld.mean"/>
 					</ctmcScale>
 					<treeModel idref="treeModel_${name}"/>
 				</ctmcScalePrior>
@@ -474,7 +494,7 @@ taxa_list = taxon_info["sequences"]%>\
 %else:
 				<ctmcScalePrior>
 					<ctmcScale>
-						<parameter idref="${name}.clock.rate"/>
+						<parameter idref="clock.rate"/>
 					</ctmcScale>
 					<treeModel idref="treeModel_${name}"/>
 				</ctmcScalePrior>
@@ -532,9 +552,15 @@ taxa_list = taxon_info["sequences"]%>\
 			<parameter idref="gtr.rates"/>
 			<parameter idref="frequencies"/>
 %endif
+%if config["clock_model"] == "relaxed":
+			<parameter idref="ucld.mean"/>
+			<parameter idref="ucld.stdev"/>
+%else:
+			<parameter idref="clock.rate"/>
+%endif
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>
-%if not config['fixed_tree']:
+%if not config["fixed_tree"]:
 			<parameter idref="treeModel_${name}.rootHeight"/>
 			<tmrcaStatistic idref="age(root)_${name}"/>
 			<treeLengthStatistic idref="treeLength_${name}"/>
@@ -542,13 +568,9 @@ taxa_list = taxon_info["sequences"]%>\
 			<parameter idref="skygrid_${name}.logPopSize"/>
 			<gmrfSkyGridLikelihood idref="skygrid_${name}"/>
 %if config["clock_model"] == "relaxed":
-			<parameter idref="ucld.mean_${name}"/>
-			<parameter idref="ucld.stdev_${name}"/>
 			<rateStatistic idref="meanRate_${name}"/>
 			<rateStatistic idref="coefficientOfVariation_${name}"/>
-			<rateCovarianceStatistic idref="covariance_${name}"/>
-%else:
-			<parameter idref="${name}.clock.rate"/>
+			<rateCovarianceStatistic idref="covariance_${name}"/>			
 %endif
 			<treeLikelihood idref="treeLikelihood_${name}"/>
 %endif
