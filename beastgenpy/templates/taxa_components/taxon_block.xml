@@ -1,6 +1,12 @@
 <%import core_funcs%>
     <!-- The list of taxa to be analysed (can also include dates/ages).          -->
-%for taxon_info in config["fasta"]:
+%if config["fasta"]:
+<%taxon_lst = config["fasta"]%>
+%else:
+<%taxon_lst = config["tree_file_dict"]%>
+%endif
+
+%for taxon_info in taxon_lst:
 <%name = taxon_info["name"]
 taxa_list = taxon_info["sequences"]%>\
     <!-- ntax=${len(taxa_list)}                                             -->

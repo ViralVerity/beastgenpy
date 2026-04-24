@@ -1,0 +1,52 @@
+
+<%import core_funcs%>
+	<constantSize id="initialDemo" units="years">
+		<populationSize>
+			<parameter id="initialDemo.popSize" value="100.0"/>
+		</populationSize>
+	</constantSize>
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>
+	<!-- Generate a random starting tree under the coalescent process            -->
+	<coalescentSimulator id="${name}.startingTree">
+		<taxa idref="${name}.taxa"/>
+		<constantSize idref="initialDemo"/>
+	</coalescentSimulator>
+	
+	<treeModel id="${name}.treeModel">
+		<coalescentTree idref="${name}.startingTree"/>
+		<rootHeight>
+			<parameter id="${name}.treeModel.rootHeight"/>
+		</rootHeight>
+		<nodeHeights internalNodes="true">
+			<parameter id="${name}.treeModel.internalNodeHeights"/>
+		</nodeHeights>
+		<nodeHeights internalNodes="true" rootNode="true">
+			<parameter id="${name}.treeModel.allInternalNodeHeights"/>
+		</nodeHeights>
+<%taxa_list = taxon_info["sequences"]%>
+%for sequence in taxa_list:
+<%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
+%if uncertainty == 1.0:	
+		<leafHeight taxon="${sequence.id}">
+			<parameter id="age(${sequence.id})"/>
+		</leafHeight>
+%endif
+%endfor
+	</treeModel>
+
+	<!-- Statistic for height of the root of the tree                            -->
+	<treeHeightStatistic id="${name}.rootHeight">
+		<treeModel idref="${name}.treeModel"/>
+	</treeHeightStatistic>
+
+	<!-- Statistic for time of most recent common ancestor of tree               -->
+	<tmrcaStatistic id="${name}.age(root)" absolute="true">
+		<treeModel idref="${name}.treeModel"/>
+	</tmrcaStatistic>
+	<!-- Statistic for sum of the branch lengths of the tree (tree length)       -->
+	<treeLengthStatistic id="${name}.treeLength">
+		<treeModel idref="${name}.treeModel"/>
+	</treeLengthStatistic>
+
+%endfor

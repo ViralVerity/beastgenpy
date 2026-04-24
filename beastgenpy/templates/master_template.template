@@ -7,3 +7,11 @@ Author: Verity Hill, University of Glasgow -->
 <beast>
 <%include file="taxa_components/taxon_block.xml" args="config=config"/>
 <%include file="taxa_components/alignment_block.xml" args="config=config"/>
+
+%if config["fixed_tree"]:
+<%include file="tree_components/fixed_tree.xml" args="config=config"/>
+%elif config["starting_tree"]:
+<%include file="tree_components/starting_tree.xml" args="config=config"/>
+%else:
+<%include file="tree_components/new_tree.xml" args="config=config"/>
+%endif
