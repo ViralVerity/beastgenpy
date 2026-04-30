@@ -53,7 +53,7 @@ Author: Verity Hill, University of Glasgow -->
 %if not config["fixed_tree"]: 
 <%include file="substitution_models/${config['subs_model']}.priors.xml" args="config=config"/>
 <%include file="clock_models/${config['clock_model']}.priors.xml" args="config=config"/>
-<%include file="substitution_models/${config['subs_model']}.priors.xml" args="config=config"/>
+<%include file="population_models/${config['population_model']}.priors.xml" args="config=config"/>
 %endif
 
 %if config["continuous_phylogeog"]:
