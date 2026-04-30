@@ -1,4 +1,5 @@
 %for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
     <!-- The strict clock (Uniform rates across branches)                        -->
 	<strictClockBranchRates id="${name}.branchRates">
 		<rate>

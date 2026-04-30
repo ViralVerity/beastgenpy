@@ -161,7 +161,7 @@ def main(sysargs = sys.argv[1:]):
     config["log_every"] = args.log_every
     config["template"] = args.template.split("/")[-1] #replace with just the master template
 
-    path_to_templates = os.path.join(os.getcwd(), "beastgenpy/templates")
+    path_to_templates = os.path.join(thisdir, "templates")
     mylookup = TemplateLookup(directories=[path_to_templates])
     mytemplate = Template(filename=os.path.join(path_to_templates, config["template"]), uri=config["template"], strict_undefined=True, lookup=mylookup)
 

@@ -8,7 +8,7 @@
 				<parameter idref="${name}.treeModel.allInternalNodeHeights"/>
 			</up>
 			<down>
-				<parameter idref="${name}.clock.rate"/>
+				<parameter idref="clock.rate"/>
 			</down>
 		</upDownOperator>
 %endfor

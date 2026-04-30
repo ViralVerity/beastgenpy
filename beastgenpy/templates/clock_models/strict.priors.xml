@@ -1,10 +1,7 @@
+%if len(config["fasta"]) > 1:
+				<gammaPrior idref="clock.rate"/>
+%endif
 %for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>\
-                <ctmcScalePrior>
-					<ctmcScale>
-						<parameter idref="clock.rate"/>
-					</ctmcScale>
-					<treeModel idref="${name}.treeModel"/>
-				</ctmcScalePrior>
+<% name = taxon_info["name"]%>\ #this is incorrect - multiple priors for same parameter
 				<strictClockBranchRates idref="${name}.branchRates"/>
 %endfor

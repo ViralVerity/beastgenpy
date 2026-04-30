@@ -5,7 +5,7 @@
 			<parameter idref="ucld.stdev"/>
 		</scaleOperator>
 %for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>\
+<% name = taxon_info["name"]%>\ #THIS IS WRONG RIGHT NOW - multiple priors for the same parameter
 		<upDownOperator scaleFactor="0.75" weight="3">
 			<up>
 				<parameter idref="${name}.treeModel.allInternalNodeHeights"/>
