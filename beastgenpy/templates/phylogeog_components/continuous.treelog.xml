@@ -1,0 +1,5 @@
+<%page args="config, name"/>
+            <trait name="${config['overall_trait']}" tag="${config['overall_trait']}"> 
+				<multivariateTraitLikelihood idref="${name}.${config['overall_trait']}.traitLikelihood"/>
+			</trait> 
+			<multivariateDiffusionModel idref="${config['overall_trait']}.diffusionModel"/> 

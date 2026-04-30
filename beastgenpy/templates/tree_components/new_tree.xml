@@ -1,8 +1,8 @@
 
 <%import core_funcs%>
-	<constantSize id="initialDemo" units="years">
+	<constantSize id="constant" units="years">
 		<populationSize>
-			<parameter id="initialDemo.popSize" value="100.0"/>
+			<parameter id="constant.popSize" value="100.0"/>
 		</populationSize>
 	</constantSize>
 %for taxon_info in config["fasta"]:
@@ -10,7 +10,7 @@
 	<!-- Generate a random starting tree under the coalescent process            -->
 	<coalescentSimulator id="${name}.startingTree">
 		<taxa idref="${name}.taxa"/>
-		<constantSize idref="initialDemo"/>
+		<constantSize idref="constant"/>
 	</coalescentSimulator>
 	
 	<treeModel id="${name}.treeModel">

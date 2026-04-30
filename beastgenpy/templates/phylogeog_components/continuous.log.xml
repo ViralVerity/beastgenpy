@@ -1,0 +1,9 @@
+            <!-- START Multivariate diffusion model                                      --> 
+			<matrixParameter idref="${config["overall_trait"]}.precision"/> 
+			<correlation idref="${config["overall_trait"]}.correlation"/> 
+			<matrixInverse idref="${config["overall_trait"]}.varCovar"/> 
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+            <continuousDiffusionStatistic idref="${name}.${config["overall_trait"]}.diffusionRate"/>
+			<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
+%endfor
