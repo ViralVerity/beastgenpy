@@ -10,7 +10,7 @@ def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm,
     config["multi_tree"] = multi_tree
     config["fixed_tree"] = fixed_tree
     config["starting_tree"] = starting_tree
-    config["dta"] = dta
+    config["discrete_phylogeog"] = dta
     config["glm"] = glm
     config["continuous_phylogeog"] = continuous_phylogeog
     config["epoch"] = epoch

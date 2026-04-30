@@ -16,7 +16,7 @@ setup(name='beastgenpy',
             "beastgenpy/scripts/trait_analysis_funcs.py"
             ],
       package_dir={"":"./"},
-      package_data={"beastgenpy":["templates/clock_models/*.xml", "templates/phylogeog_components/*.xml", "templates/population_models/*.xml", "templates/substitution_models/*.xml", "templates/taxa_components/*.xml", "templates/tree_components/*.xml"]},
+      package_data={"beastgenpy":["templates/master_template.template","templates/clock_models/*.xml", "templates/phylogeog_components/*.xml", "templates/population_models/*.xml", "templates/substitution_models/*.xml", "templates/taxa_components/*.xml", "templates/tree_components/*.xml"]},
       install_requires=[
             "mako>=1.1",
         ],

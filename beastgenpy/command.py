@@ -48,7 +48,7 @@ def main(sysargs = sys.argv[1:]):
     subs_model_group.add_argument("--subs-model", dest="subs_model", default="gtr")
 
     trait_group = parser.add_argument_group("trait_analysis_group")
-    trait_group.add_argument("--dta", action="store_true", help="Flag to run a discrete trait analysis")
+    trait_group.add_argument("--discrete-phylogeog", action="store_true", help="Flag to run a discrete trait analysis", dest="discrete_phylogeog")
     trait_group.add_argument("--traits", help="Comma separated list of traits for discrete trait analysis")
     trait_group.add_argument("--discrete-trait-file", dest="discrete_trait_file", help="File containing values for discrete traits, one line per sequence, in csv format")
     trait_group.add_argument("--trait-location-in-name", dest="trait_location_in_name", help="Information to pull trait value from taxon label. Should be provided as trait=position_in_name with different traits separated by commas. e.g.location=5, counting from 1")
@@ -87,7 +87,7 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.dta, args.glm, args.epoch, args.continuous_phylogeog)
+    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.discrete_phylogeog, args.glm, args.epoch, args.continuous_phylogeog)
 
     print(os.getcwd())
 
@@ -104,7 +104,7 @@ def main(sysargs = sys.argv[1:]):
         config["tree_file_dict"] = False
         config["newick_dict"] = False
 
-    if config["dta"]:
+    if config["discrete_phylogeog"]:
         config["ambiguities"] = trait_funcs.parse_ambiguities(args.ambiguities) #only for one trait atm
         config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_traits(args.traits, args.discrete_trait_file,  args.trait_location_in_name, args.trait_delimiter, config)
     else:
@@ -136,7 +136,7 @@ def main(sysargs = sys.argv[1:]):
         config["overall_trait"] = False
 
 
-    if not config["continuous_phylogeog"] and not config["dta"]:  
+    if not config["continuous_phylogeog"] and not config["discrete_phylogeog"]:  
         config["traits"] = False
         config["trait_dict"] = False
 
