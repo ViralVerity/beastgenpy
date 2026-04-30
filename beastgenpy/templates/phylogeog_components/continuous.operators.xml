@@ -6,9 +6,11 @@
 		<uniformIntegerOperator weight="10">
 			<parameter idref="${name}.${config["overall_trait"]}.rrwCategories"/>
 		</uniformIntegerOperator>
-
+%endfor
 		<!-- Insert precisionGibbsOperator blocks --> 
 		<precisionGibbsOperator weight="2">
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
 			<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
 %endfor
 			<multivariateWishartPrior idref="${config["overall_trait"]}.precisionPrior"/> 

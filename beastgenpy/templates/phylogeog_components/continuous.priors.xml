@@ -3,7 +3,7 @@
 %if config["uncertain_polygons"]:
 				<geoDistributionCollection id="allGeoDistributions">
 %for taxon in config["uncertain_polygons"]:
-					<flatGeoSpatialPrior idref="${taxon}_polygons"/>
+					<flatGeoSpatialPrior idref="${taxon}.polygons"/>
 %endfor
 				</geoDistributionCollection>
 %endif

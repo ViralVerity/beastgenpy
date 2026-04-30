@@ -46,7 +46,7 @@ Author: Verity Hill, University of Glasgow -->
     </operators>
 
 
-<mcmc id="mcmc" chainLength="${config["chain_length"]}" autoOptimize="true">
+    <mcmc id="mcmc" chainLength="${config["chain_length"]}" autoOptimize="true">
 		<joint id="joint">
 			<prior id="prior">
 
