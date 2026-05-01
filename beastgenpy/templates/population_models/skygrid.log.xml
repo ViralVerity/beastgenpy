@@ -1,0 +1,6 @@
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+            <parameter idref="${name}.skygrid.precision"/>
+			<parameter idref="${name}.skygrid.logPopSize"/>
+			<gmrfSkyGridLikelihood idref="${name}.skygrid"/>
+%endfor

@@ -1,0 +1,2 @@
+<%page args="config, name"/>
+                <strictClockBranchRates idref="${name}.branchRates"/>

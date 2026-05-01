@@ -1,0 +1,8 @@
+            <parameter idref="ucld.mean"/>
+			<parameter idref="ucld.stdev"/>
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+            <rateStatistic idref="${name}.meanRate"/>
+			<rateStatistic idref="${name}.coefficientOfVariation"/>
+			<rateCovarianceStatistic idref="${name}.covariance"/>	
+%endfor

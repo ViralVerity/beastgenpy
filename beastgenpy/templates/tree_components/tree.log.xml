@@ -1,0 +1,6 @@
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+            <parameter idref="${name}.treeModel.rootHeight"/>
+			<tmrcaStatistic idref="${name}.age(root)"/>
+			<treeLengthStatistic idref="${name}.treeLength"/>
+%endfor

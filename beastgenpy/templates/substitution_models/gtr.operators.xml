@@ -1,0 +1,9 @@
+        <deltaExchange delta="0.01" weight="0.1">
+			<parameter idref="gtr.rates"/>
+		</deltaExchange>
+		<deltaExchange delta="0.01" weight="0.1">
+			<parameter idref="frequencies"/>
+		</deltaExchange>
+		<scaleOperator scaleFactor="0.75" weight="1">
+			<parameter idref="alpha"/>
+		</scaleOperator>

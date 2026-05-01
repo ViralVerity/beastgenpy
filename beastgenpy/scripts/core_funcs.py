@@ -10,7 +10,7 @@ def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, dta, glm,
     config["multi_tree"] = multi_tree
     config["fixed_tree"] = fixed_tree
     config["starting_tree"] = starting_tree
-    config["dta"] = dta
+    config["discrete_phylogeog"] = dta
     config["glm"] = glm
     config["continuous_phylogeog"] = continuous_phylogeog
     config["epoch"] = epoch
@@ -128,6 +128,7 @@ def fixed_tree_parsing(fixed_tree_file, starting_tree_file, fixed_tree_dir, conf
 
     tree_file_dict = {}
     newick_dict = {}
+    tree_file = ""
     if config["multi_tree"]:
         for f in os.listdir(fixed_tree_dir):
             if f.endswith(".newick") or f.endswith(".nwk") or f.endswith("tree"): #for now, will only take newick strings
@@ -141,12 +142,9 @@ def fixed_tree_parsing(fixed_tree_file, starting_tree_file, fixed_tree_dir, conf
 
     else:
         if fixed_tree_file:
-            with open(fixed_tree_file) as f:
-                for l in f:
-                    tree = l.strip("\n").lstrip("[&R] ")
 
             tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
-            tree_file_dict[tree_name] = fixed_tree_file.split("/")[-1]
+            tree_file = fixed_tree_file.split("/")[-1]
 
         elif starting_tree_file:
             with open(starting_tree_file) as f:
@@ -155,9 +153,9 @@ def fixed_tree_parsing(fixed_tree_file, starting_tree_file, fixed_tree_dir, conf
 
             tree_name = "starting_tree"
 
-        newick_dict[tree_name] = tree
+            newick_dict[tree_name] = tree
 
-    return tree_name, tree_file_dict, newick_dict
+    return tree_name, tree_file_dict, newick_dict, tree_file
     
 def connect_seq_to_tree(seq_info):
     seq_to_tree = {}

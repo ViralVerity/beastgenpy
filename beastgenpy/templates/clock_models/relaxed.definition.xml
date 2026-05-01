@@ -1,0 +1,41 @@
+%for taxon_info in config["fasta"]:
+<%name = taxon_info["name"]%>
+    <discretizedBranchRates id="${name}.branchRates">
+		<treeModel idref="${name}.treeModel"/>
+		<distribution>
+			<logNormalDistributionModel meanInRealSpace="true">
+%if loop.first:
+				<mean>
+					<parameter id="ucld.mean" value="1.0" lower="0.0"/>
+				</mean>
+				<stdev>
+					<parameter id="ucld.stdev" value="0.3333333333333333" lower="0.0"/>
+				</stdev>
+%else:
+<mean>
+				<parameter idref="ucld.mean"/>
+				</mean>
+				<stdev>
+					<parameter idref="ucld.stdev"/>
+				</stdev>
+%endif
+			</logNormalDistributionModel>
+		</distribution>
+		<rateCategories>
+			<parameter id="${name}.branchRates.categories"/>
+		</rateCategories>
+	</discretizedBranchRates>
+
+	<rateStatistic id="${name}.meanRate" name="${name}.meanRate" mode="mean" internal="true" external="true">
+		<treeModel idref="${name}.treeModel"/>
+		<discretizedBranchRates idref="${name}.branchRates"/>
+	</rateStatistic>
+	<rateStatistic id="${name}.coefficientOfVariation" name="${name}.coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
+		<treeModel idref="${name}.treeModel"/>
+		<discretizedBranchRates idref="${name}.branchRates"/>
+	</rateStatistic>
+	<rateCovarianceStatistic id="${name}.covariance" name="${name}.covariance">
+		<treeModel idref="${name}.treeModel"/>
+		<discretizedBranchRates idref="${name}.branchRates"/>
+	</rateCovarianceStatistic>
+%endfor

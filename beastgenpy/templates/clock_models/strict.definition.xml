@@ -1,0 +1,18 @@
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+    <!-- The strict clock (Uniform rates across branches)                        -->
+	<strictClockBranchRates id="${name}.branchRates">
+		<rate>
+%if loop.first:
+			<parameter id="clock.rate" value="0.001" lower="0.0"/>
+%else:
+			<parameter idref="clock.rate"/>
+%endif
+		</rate>
+	</strictClockBranchRates>
+	
+	<rateStatistic id="${name}.meanRate" name="${name}.meanRate" mode="mean" internal="true" external="true">
+		<treeModel idref="${name}.treeModel"/>
+		<strictClockBranchRates idref="${name}.branchRates"/>
+	</rateStatistic>
+%endfor

@@ -1,0 +1,9 @@
+                <dirichletPrior alpha="1.0" sumsTo="6.0">
+					<parameter idref="gtr.rates"/>
+				</dirichletPrior>
+				<dirichletPrior alpha="1.0" sumsTo="1.0">
+					<parameter idref="frequencies"/>
+				</dirichletPrior>
+				<exponentialPrior mean="0.5" offset="0.0">
+					<parameter idref="alpha"/>
+				</exponentialPrior>

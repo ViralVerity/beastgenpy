@@ -1,0 +1,6 @@
+<!-- Insert fixed tree blocks -->  
+%for tree_name, tree_file in config["tree_file_dict"].items():
+	<empiricalTreeDistributionModel id="${tree_name}" fileName="${tree_file}">
+		<taxa idref="${tree_name}.taxa"/>
+	</empiricalTreeDistributionModel> 
+%endfor

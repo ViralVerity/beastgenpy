@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py
 import glob
 import os
-import pkg_resources
+# import pkg_resources
 
 from beastgenpy import __version__, _program
 
@@ -16,6 +16,8 @@ setup(name='beastgenpy',
             "beastgenpy/scripts/trait_analysis_funcs.py",
             "beastgenpy/scripts/error_checks.py"
             ],
+      package_dir={"":"./"},
+      package_data={"beastgenpy":["templates/master_template.template","templates/clock_models/*.xml", "templates/phylogeog_components/*.xml", "templates/population_models/*.xml", "templates/substitution_models/*.xml", "templates/taxa_components/*.xml", "templates/tree_components/*.xml"]},
       install_requires=[
             "mako>=1.1",
         ],

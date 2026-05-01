@@ -6,6 +6,8 @@ import csv
 from mako.template import Template
 from mako.runtime import Context
 from mako.exceptions import RichTraceback
+from mako.template import Template
+from mako.lookup import TemplateLookup
 from io import StringIO
 from collections import defaultdict
 
@@ -22,15 +24,15 @@ def main(sysargs = sys.argv[1:]):
     parser = argparse.ArgumentParser(add_help=False, description='make XML')
 
     tax_group = parser.add_argument_group('Taxa options')
-    tax_group.add_argument("--fasta", help="comma separated list of fasta files containing alignment to analyse")
+    tax_group.add_argument("--alignment", help="comma separated list of fasta files containing alignment to analyse")
     tax_group.add_argument("--codon-partitioning", "-cp", dest="codon_partitioning", help="comma separated list of 1s and 0s for which alignments have codon partitioning")
     tax_group.add_argument("--id-file", dest="id_file", help="File containing taxon IDs in csv format if no fasta file provided")
     tax_group.add_argument("--id-file-dir", dest="id_file_dir", help="Directory containing files with sets of taxon IDs in csv format")
 
     tree_group = parser.add_argument_group("Tree options")
     tree_group.add_argument("--multi-tree", action="store_true", dest="multi_tree", help="Perform joint analysis on multiple monophyletic trees")
-    tree_group.add_argument("--fixed-tree", action="store_true", dest="fixed_tree", help="Perform analysis on fixed tree or trees")
-    tree_group.add_argument("--fixed-tree-file", dest="fixed_tree_file", help="File containing single fixed tree in newick format") 
+    tree_group.add_argument("--fixed-tree", action="store_true", dest="fixed_tree", help="Perform analysis on fixed tree or empirical trees")
+    tree_group.add_argument("--fixed-tree-file", dest="fixed_tree_file", help="File single fixed tree or empirical trees") 
     tree_group.add_argument("--fixed-tree-dir", dest='fixed_tree_dir', help="Directory containing multiple fixed trees in newick format")
     tree_group.add_argument("--starting-tree", action="store_true", dest="starting_tree", help="flag for adding a starting tree")
     tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
@@ -43,8 +45,11 @@ def main(sysargs = sys.argv[1:]):
     clock_model_group = parser.add_argument_group("clock models")
     clock_model_group.add_argument("--clock-model", dest="clock_model", default="relaxed")
 
+    subs_model_group = parser.add_argument_group("subs models")
+    subs_model_group.add_argument("--subs-model", dest="subs_model", default="gtr")
+
     trait_group = parser.add_argument_group("trait_analysis_group")
-    trait_group.add_argument("--dta", action="store_true", help="Flag to run a discrete trait analysis")
+    trait_group.add_argument("--discrete-phylogeog", action="store_true", help="Flag to run a discrete trait analysis", dest="discrete_phylogeog")
     trait_group.add_argument("--traits", help="Comma separated list of traits for discrete trait analysis")
     trait_group.add_argument("--discrete-trait-file", dest="discrete_trait_file", help="File containing values for discrete traits, one line per sequence, in csv format")
     trait_group.add_argument("--trait-location-in-name", dest="trait_location_in_name", help="Information to pull trait value from taxon label. Should be provided as trait=position_in_name with different traits separated by commas. e.g.location=5, counting from 1")
@@ -83,24 +88,24 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.dta, args.glm, args.epoch, args.continuous_phylogeog)
+    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.discrete_phylogeog, args.glm, args.epoch, args.continuous_phylogeog)
 
-    print(config)
+    print(os.getcwd())
 
-    if args.fasta:
-        config["taxa"], config["fasta"] = core_funcs.parse_fasta(args.fasta, args.codon_partitioning)
+    if args.alignment:
+        config["taxa"], config["fasta"] = core_funcs.parse_fasta(args.alignment, args.codon_partitioning)
     else:
         config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir, args.fixed_tree_file, config)
         config["fasta"] = False #NB this won't work with cont template as it is because it always loops through this. Make taxa also have the name then generalise template to use taxa instead of fasta
 
     if config["fixed_tree"] or config["starting_tree"]:
-        config["tree_name"], config["tree_file_dict"], config["newick_dict"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
+        config["tree_name"], config["tree_file_dict"], config["newick_dict"], config["tree_file"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
     else:
         config["tree_name"] = "tree1"
         config["tree_file_dict"] = False
         config["newick_dict"] = False
 
-    if config["dta"]:
+    if config["discrete_phylogeog"]:
         config["ambiguities"] = trait_funcs.parse_ambiguities(args.ambiguities) #only for one trait atm
         config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_traits(args.traits, args.discrete_trait_file,  args.trait_location_in_name, args.trait_delimiter, config)
     else:
@@ -126,13 +131,14 @@ def main(sysargs = sys.argv[1:]):
         error_checks.check_seqs_present(config)
         if args.polygon_dir:
             config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
+            config["polygon_dir"] = args.polygon_dir
         else:
             config["uncertain_polygons"] = []
     else:
         config["overall_trait"] = False
 
 
-    if not config["continuous_phylogeog"] and not config["dta"]:  
+    if not config["continuous_phylogeog"] and not config["discrete_phylogeog"]:  
         config["traits"] = False
         config["trait_dict"] = False
 
@@ -143,6 +149,7 @@ def main(sysargs = sys.argv[1:]):
         config["cutoff"] = args.sg_cutoff
 
     config["clock_model"] = args.clock_model
+    config["subs_model"] = args.subs_model
 
     if args.file_stem:
         config["file_stem"] = args.file_stem
@@ -154,10 +161,11 @@ def main(sysargs = sys.argv[1:]):
     ##general options
     config["chain_length"] = args.chain_length
     config["log_every"] = args.log_every
-    config["template"] = args.template
+    config["template"] = args.template.split("/")[-1] #replace with just the master template
 
-
-    mytemplate = Template(filename=config["template"], strict_undefined=True)
+    path_to_templates = os.path.join(thisdir, "templates")
+    mylookup = TemplateLookup(directories=[path_to_templates])
+    mytemplate = Template(filename=os.path.join(path_to_templates, config["template"]), uri=config["template"], strict_undefined=True, lookup=mylookup)
 
     buf = StringIO()
 

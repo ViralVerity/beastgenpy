@@ -1,0 +1,140 @@
+<?xml version="1.0" standalone="yes"?>
+<%import core_funcs%>
+<!--generated with beastgenpy v1.0
+
+Author: Verity Hill, University of Glasgow -->
+
+<beast>
+<%include file="taxa_components/taxon_block.xml" args="config=config"/>
+<%include file="taxa_components/alignment_block.xml" args="config=config"/>
+
+%if config["fixed_tree"]:
+<%include file="tree_components/fixed_tree.xml" args="config=config"/>
+%elif config["starting_tree"]:
+<%include file="tree_components/starting_tree.xml" args="config=config"/>
+%else:
+<%include file="tree_components/new_tree.xml" args="config=config"/>
+<%include file="population_models/${config['growth_model']}.definition.xml" args="config=config"/>
+<%include file="clock_models/${config['clock_model']}.definition.xml" args="config=config"/>
+<%include file="substitution_models/${config['subs_model']}.definition.xml" args="config=config"/>
+<%include file="tree_components/treelikelihood.xml" args="config=config"/>
+%endif
+
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.definition.xml" args="config=config"/>
+%elif config["discrete_phylogeog"]: 
+<%include file="phylogeog_components/discrete.definition.xml" args="config=config"/>
+%endif
+
+<!-- Define operators                                                        --> 
+    <operators id="operators" optimizationSchedule="log">
+
+%if not config["fixed_tree"]:
+<%include file="substitution_models/${config['subs_model']}.operators.xml" args="config=config"/>
+<%include file="population_models/${config['growth_model']}.operators.xml" args="config=config"/>
+<%include file="clock_models/${config['clock_model']}.operators.xml" args="config=config"/>
+<%include file="tree_components/tree.operators.xml" args="config=config"/>
+<%include file="taxa_components/taxa.operators.xml" args="config=config"/>
+%endif
+
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.operators.xml" args="config=config"/>
+%elif config["discrete_phylogeog"]: 
+<%include file="phylogeog_components/discrete.operators.xml" args="config=config"/>
+%endif
+
+    </operators>
+
+
+    <mcmc id="mcmc" chainLength="${config["chain_length"]}" autoOptimize="true">
+		<joint id="joint">
+			<prior id="prior">
+
+%if not config["fixed_tree"]: 
+<%include file="substitution_models/${config['subs_model']}.priors.xml" args="config=config"/>
+<%include file="clock_models/${config['clock_model']}.priors.xml" args="config=config"/>
+<%include file="population_models/${config['population_model']}.priors.xml" args="config=config"/>
+%endif
+
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.priors.xml" args="config=config"/>
+%elif config["discrete_phylogeog"]: 
+<%include file="phylogeog_components/discrete.priors.xml" args="config=config"/>
+%endif
+
+            </prior>
+            <likelihood id="likelihood">
+
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>
+				<treeLikelihood idref="${name}.treeLikelihood"/>
+%if config["continuous_phylogeog"]:
+				<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
+%elif config["discrete_phylogeog"]:
+                <markovJumpsTreeLikelihood idref="${name}.${config["overall_trait"]}.treeLikelihood"/>
+%endif
+%endfor
+            </likelihood>
+        </joint>
+        <operators idref="operators"/>
+
+        <log id="screenLog" logEvery="${config['log_every']}">
+			<column label="Joint" dp="4" width="12">
+				<joint idref="joint"/>
+			</column>
+			<column label="Prior" dp="4" width="12">
+				<prior idref="prior"/>
+			</column>
+			<column label="Likelihood" dp="4" width="12">
+				<likelihood idref="likelihood"/>
+			</column>
+		</log>
+
+        <log id="fileLog" logEvery="${config['log_every']}" fileName="${config['file_stem']}.log" overwrite="false">      
+            <joint idref="joint"/> 
+			<prior idref="prior"/> 
+			<likelihood idref="likelihood"/> 
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.log.xml" args="config=config"/>
+%endif
+			
+%if not config["fixed_tree"]:
+<%include file="substitution_models/${config['subs_model']}.log.xml" args="config=config"/>	
+<%include file="clock_models/${config['clock_model']}.log.xml" args="config=config"/>		
+<%include file="tree_components/tree.log.xml" args="config=config"/>
+<%include file="population_models/${config['growth_model']}.log.xml" args="config=config"/>
+%endif
+
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>
+%if not config["fixed_tree"]:
+			<treeLikelihood idref="${name}.treeLikelihood"/>
+%endif		
+%endfor
+		</log>
+
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>
+		<logTree id="${name}.treeFileLog" logEvery="${config['log_every']}" nexusFormat="true" fileName="${name}.trees" sortTranslationTable="true">
+            <treeModel idref="${name}.treeModel"/>
+			<joint idref="joint"/> 
+%if config["continuous_phylogeog"]:
+<%include file="phylogeog_components/continuous.treelog.xml" args="config=config, name=name"/>
+%endif
+%if not config["fixed_tree"]:
+			<trait name="rate" tag="rate">
+<%include file="clock_models/${config['clock_model']}.treelog.xml" args="config=config, name=name"/>	
+			</trait>
+%endif
+
+        </logTree> 
+%endfor
+        </mcmc>
+
+	<report>
+		<property name="timer">
+			<mcmc idref="mcmc"/>
+		</property>
+	</report>
+	
+</beast>

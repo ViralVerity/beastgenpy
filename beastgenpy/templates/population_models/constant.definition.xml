@@ -1,0 +1,15 @@
+%for taxon_info in config["fasta"]: 
+<% name = taxon_info["name"]%>
+    <!-- Generate a coalescent likelihood                                        -->
+	<coalescentLikelihood id="${name}.coalescent">
+		<model>
+			<constantSize idref="constant"/>
+		</model>
+		<intervals>
+			<treeIntervals>
+				<treeModel idref="${name}.treeModel"/>
+			</treeIntervals>
+		</intervals>
+	</coalescentLikelihood>
+%endfor
+	

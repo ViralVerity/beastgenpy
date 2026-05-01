@@ -1,0 +1,23 @@
+        <scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="ucld.mean"/>
+		</scaleOperator>
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="ucld.stdev"/>
+		</scaleOperator>
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\ #THIS IS WRONG RIGHT NOW - multiple priors for the same parameter
+		<upDownOperator scaleFactor="0.75" weight="3">
+			<up>
+				<parameter idref="${name}.treeModel.allInternalNodeHeights"/>
+			</up>
+			<down>
+				<parameter idref="ucld.mean"/>
+			</down>
+		</upDownOperator>
+		<swapOperator size="1" weight="10" autoOptimize="false">
+			<parameter idref="${name}.branchRates.categories"/>
+		</swapOperator>
+		<uniformIntegerOperator weight="10">
+			<parameter idref="${name}.branchRates.categories"/>
+		</uniformIntegerOperator>
+%endfor

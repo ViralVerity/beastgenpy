@@ -1,0 +1,14 @@
+        <scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="clock.rate"/>
+		</scaleOperator>
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
+        <upDownOperator scaleFactor="0.75" weight="3">
+			<up>
+				<parameter idref="${name}.treeModel.allInternalNodeHeights"/>
+			</up>
+			<down>
+				<parameter idref="clock.rate"/>
+			</down>
+		</upDownOperator>
+%endfor

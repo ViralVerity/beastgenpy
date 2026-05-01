@@ -1,0 +1,23 @@
+    <gtrModel id="gtr">
+		<frequencies>
+			<frequencyModel dataType="nucleotide">
+				<frequencies>
+					<parameter id="frequencies" value="0.25 0.25 0.25 0.25"/>
+				</frequencies>
+			</frequencyModel>
+		</frequencies>
+		<rates>
+			<parameter id="gtr.rates" dimension="6" value="1.0" lower="0.0"/>
+		</rates>
+	</gtrModel>
+	<siteModel id="siteModel">
+		<substitutionModel>
+			<gtrModel idref="gtr"/>
+		</substitutionModel>
+		<gammaShape gammaCategories="4">
+			<parameter id="alpha" value="0.5" lower="0.0"/>
+		</gammaShape>
+	</siteModel>
+	<statistic id="mu" name="mu">
+		<siteModel idref="siteModel"/>
+	</statistic>
