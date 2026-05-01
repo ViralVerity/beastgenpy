@@ -20,10 +20,8 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="tree_components/treelikelihood.xml" args="config=config"/>
 %endif
 
-%if config["continuous_phylogeog"]:
-<%include file="phylogeog_components/continuous.definition.xml" args="config=config"/>
-%elif config["discrete_phylogeog"]: 
-<%include file="phylogeog_components/discrete.definition.xml" args="config=config"/>
+%if config["phylogeography"]:
+<%include file="phylogeog_components/${config['phylogeography']}.definition.xml" args="config=config"/>
 %endif
 
 <!-- Define operators                                                        --> 
@@ -37,10 +35,8 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="taxa_components/taxa.operators.xml" args="config=config"/>
 %endif
 
-%if config["continuous_phylogeog"]:
-<%include file="phylogeog_components/continuous.operators.xml" args="config=config"/>
-%elif config["discrete_phylogeog"]: 
-<%include file="phylogeog_components/discrete.operators.xml" args="config=config"/>
+%if config["phylogeography"]:
+<%include file="phylogeog_components/${config['phylogeography']}.operators.xml" args="config=config"/>
 %endif
 
     </operators>
@@ -56,10 +52,8 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="population_models/${config['population_model']}.priors.xml" args="config=config"/>
 %endif
 
-%if config["continuous_phylogeog"]:
-<%include file="phylogeog_components/continuous.priors.xml" args="config=config"/>
-%elif config["discrete_phylogeog"]: 
-<%include file="phylogeog_components/discrete.priors.xml" args="config=config"/>
+%if config["phylogeography"]:
+<%include file="phylogeog_components/${config['phylogeography']}.priors.xml" args="config=config"/>
 %endif
 
             </prior>
@@ -68,10 +62,8 @@ Author: Verity Hill, University of Glasgow -->
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>
 				<treeLikelihood idref="${name}.treeLikelihood"/>
-%if config["continuous_phylogeog"]:
-				<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
-%elif config["discrete_phylogeog"]:
-                <markovJumpsTreeLikelihood idref="${name}.${config["overall_trait"]}.treeLikelihood"/>
+%if config["phylogeography"]:
+<%include file="phylogeog_components/${config['phylogeography']}.likelihood.xml" args="config=config, name=name"/>
 %endif
 %endfor
             </likelihood>
@@ -94,8 +86,8 @@ Author: Verity Hill, University of Glasgow -->
             <joint idref="joint"/> 
 			<prior idref="prior"/> 
 			<likelihood idref="likelihood"/> 
-%if config["continuous_phylogeog"]:
-<%include file="phylogeog_components/continuous.log.xml" args="config=config"/>
+%if config["phylogeography"]:
+<%include file="phylogeog_components/${config['phylogeography']}.log.xml" args="config=config"/>
 %endif
 			
 %if not config["fixed_tree"]:
@@ -118,8 +110,8 @@ Author: Verity Hill, University of Glasgow -->
 		<logTree id="${name}.treeFileLog" logEvery="${config['log_every']}" nexusFormat="true" fileName="${name}.trees" sortTranslationTable="true">
             <treeModel idref="${name}.treeModel"/>
 			<joint idref="joint"/> 
-%if config["continuous_phylogeog"]:
-<%include file="phylogeog_components/continuous.treelog.xml" args="config=config, name=name"/>
+%if config["phylogeography"]:
+<%include file="phylogeog_components/${config['phylogeography']}.treelog.xml" args="config=config, name=name"/>
 %endif
 %if not config["fixed_tree"]:
 			<trait name="rate" tag="rate">

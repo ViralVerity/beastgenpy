@@ -1,0 +1,2 @@
+<%page args="config, name"/>
+             <multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>

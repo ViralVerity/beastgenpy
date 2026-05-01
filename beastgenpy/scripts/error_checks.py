@@ -52,3 +52,31 @@ def check_polygon_dir(config):
 
     return
 
+def check_phylogeog_value(config, phylogeography):
+
+    allowed = ["continuous", "discrete"]
+    if phylogeography not in allowed:
+        sys.stderr.write(f"{phylogeography} not allowed option, allowed options are discrete or continuous")
+        sys.exit(-1)
+    else:
+        config["phylogeography"] = phylogeography
+
+    return config
+
+def check_headers_trait(config):
+
+    with open(config["trait_file"]):
+        data = csv.DictReader(f)
+        headers = data.fieldnames
+
+    if "latitude" not in headers:
+        sys.stderr.write("latitude missing from headers in continuous trait file\n")
+        sys.exit(-1)
+        
+    if "longitude" not in headers:
+        sys.stderr.write("longitude missing from headers in continuous trait file\n")
+        sys.exit(-1)
+
+    if "coordinates" not in headers: 
+        sys.stderr.write("coordinates missing from headers in continuous trait file\n")
+        sys.exit(-1)

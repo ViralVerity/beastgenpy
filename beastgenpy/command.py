@@ -49,9 +49,12 @@ def main(sysargs = sys.argv[1:]):
     subs_model_group.add_argument("--subs-model", dest="subs_model", default="gtr")
 
     trait_group = parser.add_argument_group("trait_analysis_group")
-    trait_group.add_argument("--discrete-phylogeog", action="store_true", help="Flag to run a discrete trait analysis", dest="discrete_phylogeog")
+    trait_group.add_argument("--phylogeography", help="trait analysis, options are discrete or continuous")
+    trait_group.add_argument("--trait-file", dest="trait_file", help="file containing values for discrete or continuous traits")
+
+    trait_group.add_argument("--polygon-dir", help="directory with polygons for uncertainty estimation", dest="polygon_dir")
+
     trait_group.add_argument("--traits", help="Comma separated list of traits for discrete trait analysis")
-    trait_group.add_argument("--discrete-trait-file", dest="discrete_trait_file", help="File containing values for discrete traits, one line per sequence, in csv format")
     trait_group.add_argument("--trait-location-in-name", dest="trait_location_in_name", help="Information to pull trait value from taxon label. Should be provided as trait=position_in_name with different traits separated by commas. e.g.location=5, counting from 1")
     trait_group.add_argument("--trait-delimiter", dest="trait_delimiter", default="|", help="Separater in taxon label to pull trait value from taxon label. Default='|'")
     trait_group.add_argument("--ambiguities", help="tsv containing ambiguities for dta with two columns: one with header 'ambiguity' and one with 'options' containing a comma separated list")
@@ -63,10 +66,7 @@ def main(sysargs = sys.argv[1:]):
     trait_group.add_argument("--epoch", action="store_true", help="flag to make it an epoch analysis")
     trait_group.add_argument("--transition-times", dest="transition_times", help="comma separated list of values for epoch transition times in terms of years from most recent tip")
     
-    #change phylogeogs to one argument, have one trait file arg
-    trait_group.add_argument("--continuous-phylogeog", action="store_true",dest="continuous_phylogeog", help="Flag to run a continuous phylogeographic analysis")
-    trait_group.add_argument("--continuous-trait-file", dest="continuous_trait_file", help="File containing coordinate values under headers 'taxon,longitude,latitude' for each sequence for continuous phylogeographic analysis")
-    trait_group.add_argument("--polygon-dir", help="directory with polygons for uncertainty estimation", dest="polygon_dir")
+    
 
     gen_group = parser.add_argument_group('General options')
     gen_group.add_argument("--template", required=True, help="Template for making the XML")
@@ -90,7 +90,7 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.discrete_phylogeog, args.glm, args.epoch, args.continuous_phylogeog, args.verbose)
+    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.glm, args.epoch, args.verbose)
 
 
     if args.alignment:
@@ -106,42 +106,46 @@ def main(sysargs = sys.argv[1:]):
         config["tree_file_dict"] = False
         config["newick_dict"] = False
 
-    if config["discrete_phylogeog"]:
-        config["ambiguities"] = trait_funcs.parse_ambiguities(args.ambiguities) #only for one trait atm
-        config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_traits(args.traits, args.discrete_trait_file,  args.trait_location_in_name, args.trait_delimiter, config)
-    else:
-        config["trait_index"] = False
-        config["all_trait_options"] = False
-        config["options_per_tree"] = False
+    if args.phylogeography:
+        config = error_checks.check_phylogeog_value(config, args.phylogeography)
 
-    if config["glm"]: #needs dta bool to be true
-        config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.symmetric_predictor_dir, args.predictor_info_file, args.asymmetric_predictor_file, config)
-        config = glm_funcs.get_markov_counts(config)
+        if config["phylogeography"] == "discrete":
+            config["ambiguities"] = trait_funcs.parse_ambiguities(args.ambiguities) #only for one trait atm
+            config["traits"],config["trait_index"], config["all_trait_options"], config["trait_dict"], config["options_per_tree"] = trait_funcs.parse_discrete_traits(args.traits, args.trait_file,  args.trait_location_in_name, args.trait_delimiter, config)
+        
+            if config["glm"]: 
+                config["trait_to_predictor"], config["re_matrices"], config["bin_probs"] = glm_funcs.run_glm_functions(args.symmetric_predictor_dir, args.predictor_info_file, args.asymmetric_predictor_file, config)
+                config = glm_funcs.get_markov_counts(config)
+            else:
+                config["trait_to_predictor"] = False
+                config["re_matrices"] = False
+                config["bin_probs"] = False
+        else:
+            config["trait_index"] = False
+            config["all_trait_options"] = False
+            config["options_per_tree"] = False
+
+        
+        if config["phylogeography"] == "continuous":
+            config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.trait_file)
+            error_checks.check_seqs_present(config)
+            if args.polygon_dir:
+                config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
+                config["polygon_dir"] = args.polygon_dir
+            else:
+                config["uncertain_polygons"] = []
+        else:
+            config["overall_trait"] = False
+
+
     else:
-        config["trait_to_predictor"] = False
-        config["re_matrices"] = False
-        config["bin_probs"] = False
+            config["traits"] = False
+            config["trait_dict"] = False
 
     if config["epoch"]:
         config["transition_times"] = args.transition_times.split(",")
     else:
         config["transition_times"] = []
-
-    if config["continuous_phylogeog"]:
-        config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.continuous_trait_file)
-        error_checks.check_seqs_present(config)
-        if args.polygon_dir:
-            config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
-            config["polygon_dir"] = args.polygon_dir
-        else:
-            config["uncertain_polygons"] = []
-    else:
-        config["overall_trait"] = False
-
-
-    if not config["continuous_phylogeog"] and not config["discrete_phylogeog"]:  
-        config["traits"] = False
-        config["trait_dict"] = False
 
     
     config["population_model"] = args.population_model

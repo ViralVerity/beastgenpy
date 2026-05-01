@@ -1,0 +1,2 @@
+<%page args="config, name"/>
+                <markovJumpsTreeLikelihood idref="${name}.${config["overall_trait"]}.treeLikelihood"/>
