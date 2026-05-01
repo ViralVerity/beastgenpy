@@ -12,8 +12,8 @@
 					<parameter id="ucld.stdev" value="0.3333333333333333" lower="0.0"/>
 				</stdev>
 %else:
-<mean>
-				<parameter idref="ucld.mean"/>
+				<mean>
+					<parameter idref="ucld.mean"/>
 				</mean>
 				<stdev>
 					<parameter idref="ucld.stdev"/>

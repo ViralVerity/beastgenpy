@@ -1,5 +1,5 @@
 %for taxon_info in config["fasta"]: #something broken in here
-<% name = taxon_info["name"]%>\ 
+<% name = taxon_info["name"]%> 
         <hamiltonianMonteCarloOperator weight="5" nSteps="50" stepSize="1E-2" mode="vanilla" 
                                         autoOptimize="true" gradientCheckCount="1" gradientCheckTolerance="1E-1" 
                                         preconditioning="none" preconditioningUpdateFrequency="100">

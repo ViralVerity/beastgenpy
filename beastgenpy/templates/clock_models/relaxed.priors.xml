@@ -2,6 +2,12 @@
 					<parameter idref="ucld.stdev"/>
 				</exponentialPrior>
 				
+
+%if len(config["fasta"]) > 1:
+				<gammaPrior shape="1.0" scale="1.0" offset="0.0">
+					<parameter idref="ucld.mean"/>
+				</gammaPrior>
+%else:
 %for taxon_info in config["fasta"]:
 <% name = taxon_info["name"]%>\
 				<ctmcScalePrior>
@@ -10,5 +16,9 @@
 					</ctmcScale>
 					<treeModel idref="${name}.treeModel"/>
 				</ctmcScalePrior>
+%endfor				
+%endif
+%for taxon_info in config["fasta"]:
+<% name = taxon_info["name"]%>\
 				<discretizedBranchRates idref="${name}.branchRates"/>
 %endfor
