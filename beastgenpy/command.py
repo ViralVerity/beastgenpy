@@ -37,10 +37,10 @@ def main(sysargs = sys.argv[1:]):
     tree_group.add_argument("--starting-tree", action="store_true", dest="starting_tree", help="flag for adding a starting tree")
     tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
 
-    growth_model_group = parser.add_argument_group("Growth model analysis")
-    growth_model_group.add_argument("--growth-model", dest="growth_model", default="skygrid")
-    growth_model_group.add_argument("--sg-cutoff", dest="sg_cutoff")
-    growth_model_group.add_argument("--sg-gridpoints", dest="sg_gridpoints")
+    population_model_group = parser.add_argument_group("population model tree priors")
+    population_model_group.add_argument("--population-model", dest="population_model", default="skygrid")
+    population_model_group.add_argument("--sg-cutoff", dest="sg_cutoff")
+    population_model_group.add_argument("--sg-gridpoints", dest="sg_gridpoints")
 
     clock_model_group = parser.add_argument_group("clock models")
     clock_model_group.add_argument("--clock-model", dest="clock_model", default="relaxed")
@@ -143,8 +143,8 @@ def main(sysargs = sys.argv[1:]):
         config["trait_dict"] = False
 
     
-    config["growth_model"] = args.growth_model
-    if config["growth_model"] == "skygrid":
+    config["population_model"] = args.population_model
+    if config["population_model"] == "skygrid":
         config["gridpoints"] = int(args.sg_gridpoints)
         config["cutoff"] = args.sg_cutoff
 

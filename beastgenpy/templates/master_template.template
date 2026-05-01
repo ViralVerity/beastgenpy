@@ -14,7 +14,7 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="tree_components/starting_tree.xml" args="config=config"/>
 %else:
 <%include file="tree_components/new_tree.xml" args="config=config"/>
-<%include file="population_models/${config['growth_model']}.definition.xml" args="config=config"/>
+<%include file="population_models/${config['population_model']}.definition.xml" args="config=config"/>
 <%include file="clock_models/${config['clock_model']}.definition.xml" args="config=config"/>
 <%include file="substitution_models/${config['subs_model']}.definition.xml" args="config=config"/>
 <%include file="tree_components/treelikelihood.xml" args="config=config"/>
@@ -31,7 +31,7 @@ Author: Verity Hill, University of Glasgow -->
 
 %if not config["fixed_tree"]:
 <%include file="substitution_models/${config['subs_model']}.operators.xml" args="config=config"/>
-<%include file="population_models/${config['growth_model']}.operators.xml" args="config=config"/>
+<%include file="population_models/${config['population_model']}.operators.xml" args="config=config"/>
 <%include file="clock_models/${config['clock_model']}.operators.xml" args="config=config"/>
 <%include file="tree_components/tree.operators.xml" args="config=config"/>
 <%include file="taxa_components/taxa.operators.xml" args="config=config"/>
@@ -102,7 +102,7 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="substitution_models/${config['subs_model']}.log.xml" args="config=config"/>	
 <%include file="clock_models/${config['clock_model']}.log.xml" args="config=config"/>		
 <%include file="tree_components/tree.log.xml" args="config=config"/>
-<%include file="population_models/${config['growth_model']}.log.xml" args="config=config"/>
+<%include file="population_models/${config['population_model']}.log.xml" args="config=config"/>
 %endif
 
 %for taxon_info in config["fasta"]:
