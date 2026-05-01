@@ -1,1 +1,2 @@
+<%page args="config, name"/>
             <discretizedBranchRates idref="${name}.branchRates"/>
