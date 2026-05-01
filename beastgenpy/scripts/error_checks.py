@@ -16,11 +16,20 @@ def check_alignment(config):
     return
 
 
-def check_gp_cutoff(config):
+def check_gp_cutoff(config, cutoff, gridpoints):
 
-    #if skygrid, check gridpoints and cutoff are present
-
-    return
+    if not cutoff:
+        sys.stderr.write(f"no cutoff specified for skygrid model\n")
+        sys.exit(-1)
+    else:
+        config["cutoff"] = int(cutoff)
+    
+    if not gridpoints:
+        if config["verbose"]:
+            sys.stderr.write(f"no number of gridpoints specified for skygrid model, using one per year\n")
+        config["gridpoints"] = int(cutoff)
+    
+    return config
 
 
 def check_tree_dict(config):

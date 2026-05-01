@@ -62,7 +62,8 @@ def main(sysargs = sys.argv[1:]):
     trait_group.add_argument("--symmetric-predictor-dir", dest="symmetric_predictor_dir", help="Directory containing matrices for symmetrical predictors. Each file should have the first row and column as trait values, with the predictor value in the appropriate row/column combination.")
     trait_group.add_argument("--epoch", action="store_true", help="flag to make it an epoch analysis")
     trait_group.add_argument("--transition-times", dest="transition_times", help="comma separated list of values for epoch transition times in terms of years from most recent tip")
-
+    
+    #change phylogeogs to one argument, have one trait file arg
     trait_group.add_argument("--continuous-phylogeog", action="store_true",dest="continuous_phylogeog", help="Flag to run a continuous phylogeographic analysis")
     trait_group.add_argument("--continuous-trait-file", dest="continuous_trait_file", help="File containing coordinate values under headers 'taxon,longitude,latitude' for each sequence for continuous phylogeographic analysis")
     trait_group.add_argument("--polygon-dir", help="directory with polygons for uncertainty estimation", dest="polygon_dir")
@@ -72,6 +73,7 @@ def main(sysargs = sys.argv[1:]):
     gen_group.add_argument("--chain-length", dest="chain_length", default="100000000", help="Number of states to run the MCMC chain for. Default=100m")
     gen_group.add_argument("--log-every", dest="log_every", default="10000", help="How often to log tree and log files. Default=10,000")
     gen_group.add_argument("--file-stem", dest="file_stem", help="File stem for analysis")
+    gen_group.add_argument("--verbose", help="print more info")
     gen_group.add_argument("-h","--help",action="store_true",dest="help")
 
 
@@ -88,9 +90,8 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.discrete_phylogeog, args.glm, args.epoch, args.continuous_phylogeog)
+    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.discrete_phylogeog, args.glm, args.epoch, args.continuous_phylogeog, args.verbose)
 
-    print(os.getcwd())
 
     if args.alignment:
         config["taxa"], config["fasta"] = core_funcs.parse_fasta(args.alignment, args.codon_partitioning)
@@ -145,8 +146,9 @@ def main(sysargs = sys.argv[1:]):
     
     config["population_model"] = args.population_model
     if config["population_model"] == "skygrid":
-        config["gridpoints"] = int(args.sg_gridpoints)
-        config["cutoff"] = args.sg_cutoff
+        config = error_checks.check_gp_cutoff(config, args.sg_cutoff, args.sg_gridpoints)
+        if not config["gridpoints"]:
+            config["gridpoints"] = int(args.sg_gridpoints)
 
     config["clock_model"] = args.clock_model
     config["subs_model"] = args.subs_model
