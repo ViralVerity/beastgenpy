@@ -4,7 +4,6 @@ import csv
 import os
 from collections import defaultdict
 import sys
-import dendropy
 import error_checks as error_checks
 
 def add_bools_to_config(config, fixed_tree, starting_tree, glm, epoch, verbose):
@@ -71,11 +70,13 @@ def parse_fasta(fasta_list, codon_partitioning):
             fasta_info[name]["sequences"] = pull_sequences(fasta)
             fasta_info[name]["codon_partitioning"] = False
     
-    lst = []
-    for i in fasta_info[name]["sequences"]:
-        lst.append(i.id)
-    fasta_info[name]["taxon_list"] = lst
-            
+    for name, info in fasta_info.items():
+        lst = []
+        for i in info["sequences"]:
+            lst.append(i.id)
+
+        fasta_info[name]["taxon_list"] = lst
+    
     return fasta_info
 
 def pull_sequences(fasta):

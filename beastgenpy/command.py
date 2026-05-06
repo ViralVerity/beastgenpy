@@ -47,7 +47,6 @@ def main(sysargs = sys.argv[1:]):
     trait_group = parser.add_argument_group("trait_analysis_group")
     trait_group.add_argument("--phylogeography", help="trait analysis, options are discrete or continuous")
     trait_group.add_argument("--trait-file", dest="trait_file", help="file containing values for discrete or continuous traits")
-
     trait_group.add_argument("--polygon-dir", help="directory with polygons for uncertainty estimation", dest="polygon_dir")
 
     trait_group.add_argument("--traits", help="Comma separated list of traits for discrete trait analysis")
@@ -63,9 +62,7 @@ def main(sysargs = sys.argv[1:]):
     trait_group.add_argument("--transition-times", dest="transition_times", help="comma separated list of values for epoch transition times in terms of years from most recent tip")
     
     
-
     gen_group = parser.add_argument_group('General options')
-    gen_group.add_argument("--template", required=True, help="Template for making the XML")
     gen_group.add_argument("--chain-length", dest="chain_length", default="100000000", help="Number of states to run the MCMC chain for. Default=100m")
     gen_group.add_argument("--log-every", dest="log_every", default="10000", help="How often to log tree and log files. Default=10,000")
     gen_group.add_argument("--file-stem", dest="file_stem", help="File stem for analysis")
@@ -99,7 +96,9 @@ def main(sysargs = sys.argv[1:]):
 
     error_checks.check_dates_in_names(config)
 
-    for name, info in config["sequence_info"]:
+    config["seq_to_tree"] = {}
+    for name, info in config["sequence_info"].items():
+        print(info.keys())
         for seq_name in info["taxon_list"]:
             config["seq_to_tree"][seq_name] = name
 
@@ -166,11 +165,10 @@ def main(sysargs = sys.argv[1:]):
     ##general options
     config["chain_length"] = args.chain_length
     config["log_every"] = args.log_every
-    config["template"] = args.template.split("/")[-1] #replace with just the master template
 
     path_to_templates = os.path.join(thisdir, "templates")
     mylookup = TemplateLookup(directories=[path_to_templates])
-    mytemplate = Template(filename=os.path.join(path_to_templates, config["template"]), uri=config["template"], strict_undefined=True, lookup=mylookup)
+    mytemplate = Template(filename=os.path.join(path_to_templates, "master_template.template"), uri="master_template.template", strict_undefined=True, lookup=mylookup)
 
     buf = StringIO()
 

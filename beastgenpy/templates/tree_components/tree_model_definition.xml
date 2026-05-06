@@ -1,6 +1,6 @@
 
 <%import core_funcs%>
-%for name, info in config["sequence_info"]:
+%for name, info in config["sequence_info"].items():
 	<treeModel id="${name}.treeModel">
 		<coalescentTree idref="${name}.startingTree"/>
 		<rootHeight>
@@ -12,9 +12,8 @@
 		<nodeHeights internalNodes="true" rootNode="true">
 			<parameter id="${name}.treeModel.allInternalNodeHeights"/>
 		</nodeHeights>
-<%taxa_list = info["taxon_list"]%>
-%for sequence in taxa_list:
-<%date,uncertainty = core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
+%for sequence in info["taxon_list"]:
+<%date,uncertainty = core_funcs.decimal_date(sequence.split("|")[-1])%>\
 %if uncertainty == 1.0:	
 		<leafHeight taxon="${sequence}">
 			<parameter id="age(${sequence})"/>

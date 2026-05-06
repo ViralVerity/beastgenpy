@@ -1,4 +1,4 @@
-%for name, info in config["sequence_info"]:
+%for name, info in config["sequence_info"].items():
 	<alignment id="${name}.alignment" dataType="nucleotide">
 %for sequence in info["sequences"]:
 		<sequence>

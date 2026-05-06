@@ -1,10 +1,10 @@
 
 <%import core_funcs%>
     <!-- The list of taxa to be analysed (can also include dates/ages).          -->
-%for name, info in config["sequence_info"]:
+%for name, info in config["sequence_info"].items():
     <!-- ntax=${len(info["taxon_list"])}                                             -->
     <taxa id="${name}.taxa">
-%for sequence_name in info["sequences"]: 
+%for sequence_name in info["taxon_list"]: 
         <taxon id="${sequence_name}">
 <% date,uncertainty= core_funcs.decimal_date(sequence_name.split("|")[-1])%>\
             <date value="${date}" direction="forwards" units="years" uncertainty="${uncertainty}"/> 
