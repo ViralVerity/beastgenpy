@@ -1,14 +1,32 @@
 # beastgenpy
 
-A python package to make complicated XMLs for BEASTv1.10
+A python package to make XMLs for BEASTX that are not possible and/or annoying to make in BEAUti. Alternative to beastgen written in python.
 
-Broadly speaking it's to help with ones that can be difficult to make in BEAUti or aren't available yet eg:
+Specifically it's useful for making single XMLs with multiple tree models, although it will also work with a single tree model.
 
-1. Discrete trait analysis with GLM
-2. Continuous trait analysis
-3. Multi-tree analyses
-4. Fixed trees
 
-And combinations of the above
+Currently implemented models:
 
-Currently only provides HMC Skygrid and ucld relaxed clock. 
+Phylogeography:
+- Continuous with or without providing polygons to deal with uncertain locations
+- Discrete with or without GLM (coming soon)
+
+Clock models:
+- Standard UCLD
+- Strict
+
+Population models:
+- HMC Skygrid (currently broken)
+- Constant population
+
+Substitution models:
+- GTR with rate variation
+
+Tree stuff:
+- Estimating topology entirely
+- Starting tree
+- Empirical trees
+- Fixed tree
+- Tip date sampling (will happen automatically for sequences with only a year)
+- Codon partitioning (needs fixing)
+
