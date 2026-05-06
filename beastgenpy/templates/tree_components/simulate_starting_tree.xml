@@ -1,0 +1,13 @@
+%for name in config["sequence_info"].keys():
+	<constantSize id="${name}.constant" units="years">
+		<populationSize>
+			<parameter id="${name}.constant.popSize" value="100.0"/>
+		</populationSize>
+	</constantSize>
+
+	<!-- Generate a random starting tree under the coalescent process            -->
+	<coalescentSimulator id="${name}.startingTree">
+		<taxa idref="${name}.taxa"/>
+		<constantSize idref="${name}.constant"/>
+	</coalescentSimulator>
+%endfor

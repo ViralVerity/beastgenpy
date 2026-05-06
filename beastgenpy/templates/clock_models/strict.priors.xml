@@ -3,8 +3,7 @@
 					<parameter idref="clock.rate"/>
 				</gammaPrior>
 %else:
-<%taxon_info = config["fasta"][0]%>\
-<% name = taxon_info["name"]%>\
+%for name in config["sequence_info"].keys():
 				<ctmcScalePrior>
 					<ctmcScale>
 						<parameter idref="clock.rate"/>

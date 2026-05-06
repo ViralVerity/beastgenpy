@@ -4,10 +4,11 @@ import csv
 import os
 from collections import defaultdict
 import sys
+import dendropy
+import error_checks as error_checks
 
-def add_bools_to_config(config, multi_tree, fixed_tree, starting_tree, glm, epoch, verbose):
+def add_bools_to_config(config, fixed_tree, starting_tree, glm, epoch, verbose):
 
-    config["multi_tree"] = multi_tree
     config["fixed_tree"] = fixed_tree
     config["starting_tree"] = starting_tree
     config["glm"] = glm
@@ -55,31 +56,27 @@ def parse_fasta(fasta_list, codon_partitioning):
         for seq in SeqIO.parse(fastas[0],"fasta"):
             taxa.add(seq.id)
 
-    fasta_info = []
+    fasta_info = defaultdict(dict)
     if cps != "":
         for fasta,cp in zip(fastas, cps):
-            inner_dict = {}
-            inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
-
-            inner_dict["sequences"] = pull_sequences(fasta)
+            name = fasta.split("/")[-1].strip(".fasta")
+            fasta_info[name]["sequences"] = pull_sequences(fasta)
             if cp == "1":
-                inner_dict["codon_partitioning"] = True 
+                fasta_info[name]["codon_partitioning"] = True 
             else:
-                inner_dict["codon_partitioning"] = False
-            
-            fasta_info.append(inner_dict)
+                fasta_info[name]["codon_partitioning"] = False     
     else:
         for fasta in fastas:
-            inner_dict = {}
-            inner_dict["name"] = fasta.split("/")[-1].strip(".fasta")
-
-            inner_dict["sequences"] = pull_sequences(fasta)
-           
-            inner_dict["codon_partitioning"] = False
+            name = fasta.split("/")[-1].strip(".fasta")
+            fasta_info[name]["sequences"] = pull_sequences(fasta)
+            fasta_info[name]["codon_partitioning"] = False
+    
+    lst = []
+    for i in fasta_info[name]["sequences"]:
+        lst.append(i.id)
+    fasta_info[name]["taxon_list"] = lst
             
-            fasta_info.append(inner_dict)
-        
-    return taxa, fasta_info
+    return fasta_info
 
 def pull_sequences(fasta):
 
@@ -89,84 +86,6 @@ def pull_sequences(fasta):
 
     return seq_list
 
-    
-def get_taxa_no_fasta(id_file, id_file_dir, fixed_tree_file, config):
-#taxa data structure needs thinking about - mostly the key
-
-    taxa = defaultdict(list)
-    if id_file:
-        if config["fixed_tree"]:
-            name = fixed_tree_file.split("/")[-1].split(".")[0]
-        else:
-            name = "taxa"
-        with open(id_file) as f:
-            data = csv.DictReader(f,delimiter="\t")
-            for l in data:
-                taxa[name].append(l["name"])
-
-    elif id_file_dir: #for taxon sets or for multitree
-        for f in os.listdir(id_file_dir):
-            if f.endswith(".csv"):
-                file_name = f.split("/")[-1].split(".")[0]
-                with open(os.path.join(id_file_dir,f)) as open_f:
-                    data = csv.DictReader(open_f)
-                    for l in data:
-                        taxa[file_name].append(l["name"])
-    else:
-        taxa = False #not sure if I want this - shouldn't it just error out? there's now way to get IDs if not those args or fasta
-
-    return taxa
-
-#some kind of taxon set function
-
-            
-def fixed_tree_parsing(fixed_tree_file, starting_tree_file, fixed_tree_dir, config):
-#errors:
-#check dir is there if multitree
-#need one of these args if fixed tree is selected
-
-    tree_file_dict = {}
-    newick_dict = {}
-    tree_file = ""
-    if config["multi_tree"]:
-        for f in os.listdir(fixed_tree_dir):
-            if f.endswith(".newick") or f.endswith(".nwk") or f.endswith("tree"): #for now, will only take newick strings
-                tree_name = f.split("/")[-1].split(".")[0]
-                with open(os.path.join(fixed_tree_dir,f)) as open_f:
-                    for l in open_f:
-                        fixed_tree = l.strip("\n").lstrip("[&R] ")
-                    newick_dict[tree_name] = fixed_tree
-                tree_file_dict[tree_name] = f #do I need this data structure?
-        tree_name = "" #not sure why this is here
-
-    else:
-        if fixed_tree_file:
-
-            tree_name = fixed_tree_file.split("/")[-1].split(".")[0]
-            tree_file = fixed_tree_file.split("/")[-1]
-
-        elif starting_tree_file:
-            with open(starting_tree_file) as f:
-                for l in f:
-                    tree = l.strip("\n").lstrip("[&R] ")
-
-            tree_name = "starting_tree"
-
-            newick_dict[tree_name] = tree
-
-    return tree_name, tree_file_dict, newick_dict, tree_file
-    
-def connect_seq_to_tree(seq_info):
-    seq_to_tree = {}
-    for tree in seq_info:
-    
-        name = tree["name"]
-        seq_list = tree["sequences"] #right now these are sequence objects, will generalise to strings
-
-        for seq in seq_list:
-            seq_to_tree[seq.id] = name
-
-    return seq_to_tree
     
           
 

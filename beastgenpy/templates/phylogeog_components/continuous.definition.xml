@@ -22,8 +22,7 @@
 	</multivariateWishartPrior>
 
 	<!-- END Multivariate diffusion model                                        -->
-%for taxon_info in config["fasta"]:
-<%name = taxon_info["name"]%>
+%for name in config["sequence_info"].keys():
 <!-- START Multivariate diffusion model                                     -->
 	<discretizedBranchRates id="${name}.${config["overall_trait"]}.diffusionRates">
 		<treeModel idref="${name}.treeModel"/>

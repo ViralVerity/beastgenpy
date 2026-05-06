@@ -1,12 +1,10 @@
 <%import core_funcs%>
-%for taxon_info in config["fasta"]:
-<%name = taxon_info["name"]
-taxa_list = taxon_info["sequences"]%>\
-%for sequence in taxa_list:
-<%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
+%for name, info in config["sequence_info"]:
+%for sequence in info["taxon_list"]:
+<%date,uncertainty= core_funcs.decimal_date(sequence.split("|")[-1])%>\
 %if uncertainty == 1.0:	
    		<uniformOperator weight="0.001">
-			<parameter idref="age(${sequence.id})"/>
+			<parameter idref="age(${sequence})"/>
 		</uniformOperator>
 %endif
 %endfor

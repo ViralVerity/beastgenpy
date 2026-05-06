@@ -1,3 +1,5 @@
-        <scaleOperator scaleFactor="0.75" weight="3">
-			<parameter idref="constant.popSize"/>
+%for name in config["sequence_info"].keys(): 
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="${name}.constant.popSize"/>
 		</scaleOperator>
+%endfor

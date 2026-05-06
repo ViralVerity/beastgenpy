@@ -2,8 +2,7 @@
 			<matrixParameter idref="${config["overall_trait"]}.precision"/> 
 			<correlation idref="${config["overall_trait"]}.correlation"/> 
 			<matrixInverse idref="${config["overall_trait"]}.varCovar"/> 
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>\
+%for name in config["sequence_info"].keys():
             <continuousDiffusionStatistic idref="${name}.${config["overall_trait"]}.diffusionRate"/>
 			<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
 %endfor

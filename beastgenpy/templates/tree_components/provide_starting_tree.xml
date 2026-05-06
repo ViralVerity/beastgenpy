@@ -1,0 +1,4 @@
+%for name, info in config["sequence_info"]:
+    <newick id="${name}.startingTree">
+${info["tree_string"]}
+    </newick>   

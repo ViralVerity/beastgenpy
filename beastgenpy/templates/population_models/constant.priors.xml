@@ -1,8 +1,6 @@
+%for name in config["sequence_info"].keys(): 
                 <gammaPrior shape="0.001" scale="1000.0" offset="0.0">
-					<parameter idref="constant.popSize"/>
+					<parameter idref="${name}.constant.popSize"/>
 				</gammaPrior>
-
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>\
                 <coalescentLikelihood idref="${name}.coalescent"/>
 %endfor

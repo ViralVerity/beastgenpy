@@ -1,18 +1,6 @@
 
 <%import core_funcs%>
-	<constantSize id="constant" units="years">
-		<populationSize>
-			<parameter id="constant.popSize" value="100.0"/>
-		</populationSize>
-	</constantSize>
-%for taxon_info in config["fasta"]:
-<%name = taxon_info["name"]%>
-	<!-- Generate a random starting tree under the coalescent process            -->
-	<coalescentSimulator id="${name}.startingTree">
-		<taxa idref="${name}.taxa"/>
-		<constantSize idref="constant"/>
-	</coalescentSimulator>
-	
+%for name, info in config["sequence_info"]:
 	<treeModel id="${name}.treeModel">
 		<coalescentTree idref="${name}.startingTree"/>
 		<rootHeight>
@@ -24,12 +12,12 @@
 		<nodeHeights internalNodes="true" rootNode="true">
 			<parameter id="${name}.treeModel.allInternalNodeHeights"/>
 		</nodeHeights>
-<%taxa_list = taxon_info["sequences"]%>
+<%taxa_list = info["taxon_list"]%>
 %for sequence in taxa_list:
-<%date,uncertainty= core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
+<%date,uncertainty = core_funcs.decimal_date(sequence.id.split("|")[-1])%>\
 %if uncertainty == 1.0:	
-		<leafHeight taxon="${sequence.id}">
-			<parameter id="age(${sequence.id})"/>
+		<leafHeight taxon="${sequence}">
+			<parameter id="age(${sequence})"/>
 		</leafHeight>
 %endif
 %endfor

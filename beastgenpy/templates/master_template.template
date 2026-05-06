@@ -6,14 +6,18 @@ Author: Verity Hill, University of Glasgow -->
 
 <beast>
 <%include file="taxa_components/taxon_block.xml" args="config=config"/>
-<%include file="taxa_components/alignment_block.xml" args="config=config"/>
 
 %if config["fixed_tree"]:
-<%include file="tree_components/fixed_tree.xml" args="config=config"/>
-%elif config["starting_tree"]:
-<%include file="tree_components/starting_tree.xml" args="config=config"/>
+%include file="tree_components/fixed_tree.xml" args="config=config"/>
 %else:
-<%include file="tree_components/new_tree.xml" args="config=config"/>
+<%include file="taxa_components/alignment_block.xml" args="config=config"/>
+%if config["starting_tree"]:
+<%include file="tree_components/provide_starting_tree.xml" args="config=config"/>
+%else:
+<%include file="tree_components/simulate_starting_tree.xml" args="config=config"/>
+%endif
+
+<%include file="tree_components/tree_model_definition.xml" args="config=config"/>
 <%include file="population_models/${config['population_model']}.definition.xml" args="config=config"/>
 <%include file="clock_models/${config['clock_model']}.definition.xml" args="config=config"/>
 <%include file="substitution_models/${config['subs_model']}.definition.xml" args="config=config"/>
@@ -35,6 +39,10 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="taxa_components/taxa.operators.xml" args="config=config"/>
 %endif
 
+%if config["empirical"]: #need to work out
+<%include file="tree_components/empirical.operators.xml" args="config=config"/>
+%endif
+
 %if config["phylogeography"]:
 <%include file="phylogeog_components/${config['phylogeography']}.operators.xml" args="config=config"/>
 %endif
@@ -51,6 +59,7 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="clock_models/${config['clock_model']}.priors.xml" args="config=config"/>
 <%include file="population_models/${config['population_model']}.priors.xml" args="config=config"/>
 %endif
+#tree priors?
 
 %if config["phylogeography"]:
 <%include file="phylogeog_components/${config['phylogeography']}.priors.xml" args="config=config"/>

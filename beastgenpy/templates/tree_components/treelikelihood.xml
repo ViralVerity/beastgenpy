@@ -1,5 +1,4 @@
-%for taxon_info in config["fasta"]:
-<%name = taxon_info["name"]%>\
+%for name in config["sequence_info"].keys():
 	<treeLikelihood id="${name}.treeLikelihood" useAmbiguities="false">
 		<patterns idref="${name}.patterns"/>
 		<treeModel idref="${name}.treeModel"/>

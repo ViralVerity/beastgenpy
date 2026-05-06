@@ -1,8 +1,6 @@
-%if not config["fixed_tree"]:
-%for taxon_info in config["fasta"]:
-	<%name = taxon_info["name"]%>
+%for name, info in config["sequence_info"]:
 	<alignment id="${name}.alignment" dataType="nucleotide">
-%for sequence in taxon_info["sequences"]:
+%for sequence in info["sequences"]:
 		<sequence>
             <taxon idref="${sequence.id}"/>
             ${sequence.seq}
@@ -14,4 +12,3 @@
 		<alignment idref="${name}.alignment"/>
 	</patterns>
 %endfor
-%endif

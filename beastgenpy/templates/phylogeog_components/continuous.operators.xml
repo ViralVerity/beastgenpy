@@ -1,5 +1,4 @@
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>\
+%for name in config["sequence_info"].keys():
         <swapOperator size="1" weight="30" autoOptimize="false">
 			<parameter idref="${name}.${config["overall_trait"]}.rrwCategories"/>
 		</swapOperator>
@@ -9,8 +8,7 @@
 %endfor
 		<!-- Insert precisionGibbsOperator blocks --> 
 		<precisionGibbsOperator weight="2">
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>\
+%for name in config["sequence_info"].keys():
 			<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
 %endfor
 			<multivariateWishartPrior idref="${config["overall_trait"]}.precisionPrior"/> 

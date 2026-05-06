@@ -26,16 +26,12 @@ def main(sysargs = sys.argv[1:]):
     tax_group = parser.add_argument_group('Taxa options')
     tax_group.add_argument("--alignment", help="comma separated list of fasta files containing alignment to analyse")
     tax_group.add_argument("--codon-partitioning", "-cp", dest="codon_partitioning", help="comma separated list of 1s and 0s for which alignments have codon partitioning")
-    tax_group.add_argument("--id-file", dest="id_file", help="File containing taxon IDs in csv format if no fasta file provided")
-    tax_group.add_argument("--id-file-dir", dest="id_file_dir", help="Directory containing files with sets of taxon IDs in csv format")
 
     tree_group = parser.add_argument_group("Tree options")
-    tree_group.add_argument("--multi-tree", action="store_true", dest="multi_tree", help="Perform joint analysis on multiple monophyletic trees")
     tree_group.add_argument("--fixed-tree", action="store_true", dest="fixed_tree", help="Perform analysis on fixed tree or empirical trees")
-    tree_group.add_argument("--fixed-tree-file", dest="fixed_tree_file", help="File single fixed tree or empirical trees") 
-    tree_group.add_argument("--fixed-tree-dir", dest='fixed_tree_dir', help="Directory containing multiple fixed trees in newick format")
     tree_group.add_argument("--starting-tree", action="store_true", dest="starting_tree", help="flag for adding a starting tree")
-    tree_group.add_argument("--starting-tree-file", dest='starting_tree_file', help="file containing newick string for starting tree")
+    tree_group.add_argument("--tree-file", dest="fixed_tree_file", help="File with single fixed/empirical/starting tree") 
+    tree_group.add_argument("--tree-dir", dest='fixed_tree_dir', help="Directory containing multiple fixed/empirical/starting trees in newick format")
 
     population_model_group = parser.add_argument_group("population model tree priors")
     population_model_group.add_argument("--population-model", dest="population_model", default="skygrid")
@@ -90,21 +86,25 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.multi_tree, args.fixed_tree, args.starting_tree, args.glm, args.epoch, args.verbose)
+    config = core_funcs.add_bools_to_config(config, args.fixed_tree, args.starting_tree, args.glm, args.epoch, args.verbose)
 
-
+    #pull information about sequences
     if args.alignment:
-        config["taxa"], config["fasta"] = core_funcs.parse_fasta(args.alignment, args.codon_partitioning)
-    else:
-        config["taxa"] = core_funcs.get_taxa_no_fasta(args.id_file, args.id_file_dir, args.fixed_tree_file, config)
-        config["fasta"] = False #NB this won't work with cont template as it is because it always loops through this. Make taxa also have the name then generalise template to use taxa instead of fasta
+        config["sequence_info"] = core_funcs.parse_fasta(args.alignment, args.codon_partitioning)
+    if args.fixed_tree:
+        config = core_funcs.parse_fixed_trees(args.tree_file, args.tree_dir)
+    if not config["sequence_info"]:
+        sys.stderr.write("Need to provide either an alignment or fixed trees file/directory\n")
+        sys.exit(-1)
 
-    if config["fixed_tree"] or config["starting_tree"]:
-        config["tree_name"], config["tree_file_dict"], config["newick_dict"], config["tree_file"] = core_funcs.fixed_tree_parsing(args.fixed_tree_file, args.starting_tree_file, args.fixed_tree_dir, config)
-    else:
-        config["tree_name"] = "tree1"
-        config["tree_file_dict"] = False
-        config["newick_dict"] = False
+    error_checks.check_dates_in_names(config)
+
+    for name, info in config["sequence_info"]:
+        for seq_name in info["taxon_list"]:
+            config["seq_to_tree"][seq_name] = name
+
+    if args.starting_tree:
+        config["sequence_info"] = core_funcs.parse_starting_trees(args.tree_file, args.tree_dir)
 
     if args.phylogeography:
         config = error_checks.check_phylogeog_value(config, args.phylogeography)
@@ -139,8 +139,9 @@ def main(sysargs = sys.argv[1:]):
 
 
     else:
-            config["traits"] = False
-            config["trait_dict"] = False
+        config["traits"] = False
+        config["trait_dict"] = False
+        config["phylogeography"] = False
 
     if config["epoch"]:
         config["transition_times"] = args.transition_times.split(",")
@@ -161,8 +162,6 @@ def main(sysargs = sys.argv[1:]):
         config["file_stem"] = args.file_stem
     else:
         config["file_stem"] = args.template.split("/")[-1].split(".")[0]
-
-    config["seq_to_tree"] = core_funcs.connect_seq_to_tree(config["fasta"])
     
     ##general options
     config["chain_length"] = args.chain_length

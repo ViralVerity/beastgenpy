@@ -1,5 +1,4 @@
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>\
+%for name in config["sequence_info"].keys():
                 <gammaPrior idref="${name}.skygrid.precision.prior"/>
 				<gmrfSkyGridLikelihood idref="${name}.skygrid"/>
 %endfor

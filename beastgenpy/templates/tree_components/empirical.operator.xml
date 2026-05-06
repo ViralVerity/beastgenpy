@@ -1,0 +1,5 @@
+%for name in config["sequence_info"]:
+        <empiricalTreeDistributionOperator weight="4">
+			<empiricalTreeDistributionModel idref="${name}.treeModel"/>
+		</empiricalTreeDistributionOperator>
+%endfor

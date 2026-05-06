@@ -1,1 +1,3 @@
-            <parameter idref="constant.popSize"/>
+%for name in config["sequence_info"].keys(): 
+            <parameter idref="${name}.constant.popSize"/>
+%endfor
