@@ -1,18 +1,64 @@
 import sys
 import csv
 import os
-
-def check_seqs_present(config):
-
-    for fasta_info in config["fasta"]:
-        for seq in fasta_info["sequences"]:
-            if seq.id not in config["trait_dict"]:
-                sys.stderr.write(f"{seq.id} not in trait file\n")
-                sys.exit(-1)
+import datetime as dt
 
 def check_file_exists(file):
 
-    #alignment, trees, trait file
+    if not os.path.exists(file):
+        sys.stderr.write(f"can't find {file}\n")
+        sys.exit(-1)
+
+    return
+
+def check_dates_in_names(config):
+
+    for analysis, info in config["sequence_info"].items():
+        for name in info["taxon_list"].items():
+            if not "|" in name:
+                sys.stderr(f"sequence name format needs to be '|[date]'. {name} in fasta/tree {name} is incorrect \n")
+                sys.exit(-1)
+            else:
+                date_string = name.split("|")[-1]
+                if len(date_string.split("-")) == 3:
+                    try:
+                        date = dt.datetime.strptime(date_string, "%Y-%m-%d").date()
+                    except:
+                        sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                        sys.exit(-1)
+                elif len(date_string.split("-")) == 2:
+                    try:
+                        date = dt.datetime.strptime(date_string, "%Y-%m").date()
+                    except:
+                        sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                        sys.exit(-1)
+                elif len(date_string.split("-")) == 1:
+                    try:
+                        date = dt.datetime.strptime(date_string, "%Y").date()
+                    except:
+                        sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                        sys.exit(-1)
+                else:
+                    sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                    sys.exit(-1)
+    return
+
+def check_names_models(config, thisdir):
+
+    path_to_templates = os.path.join(thisdir, "templates")
+
+    allowed_models = set()
+
+    for direc in ("population_models", "substitution_models", "clock_models", "phylogeog_components"):
+        for file in os.listdir(os.path.join(path_to_templates, direc)):
+            if file.endswith(".xml")
+                model = file.split(".")[0]
+                allowed_models.add(model)
+
+    for key in ["phylogeography", "subs_model", "clock_model", "population_model"]:
+        if config[key] not in allowed_models:
+            sys.stderr.write(f"{config[key]} not allowed (either typo or not yet implemented). See docs for implemented models")
+            sys.exit(-1)
 
     return
 
@@ -31,23 +77,13 @@ def check_gp_cutoff(config, cutoff, gridpoints):
     
     return config
 
-def check_dates_in_names(config):
+def check_seqs_present(config):
 
-
-    return
-
-def check_names_models(config):
-
-    #that I've implemented skygrid/relaxed clock/whatever
-    #matches to existing template blocks
-
-    return
-
-def check_polygon_dir(config):
-
-    #polygon dir is findable 
-
-    return
+    for fasta_info in config["fasta"]:
+        for seq in fasta_info["sequences"]:
+            if seq.id not in config["trait_dict"]:
+                sys.stderr.write(f"{seq.id} not in trait file\n")
+                sys.exit(-1)
 
 def check_phylogeog_value(config, phylogeography):
 

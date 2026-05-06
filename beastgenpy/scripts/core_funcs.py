@@ -32,9 +32,6 @@ def decimal_date(date_string):
     elif len(date_string.split("-")) == 1:
         date = dt.datetime.strptime(date_string, "%Y").date()
         uncertainty = 1.0
-    else:
-        sys.stderr("date not in recognised format")
-        sys.exit(-1)
     
     start = dt.date(date.year, 1, 1).toordinal()
     year_length = dt.date(date.year+1, 1, 1).toordinal() - start

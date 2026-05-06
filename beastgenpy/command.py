@@ -129,6 +129,7 @@ def main(sysargs = sys.argv[1:]):
             config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.trait_file)
             error_checks.check_seqs_present(config)
             if args.polygon_dir:
+                error_checks.check_file(args.polygon_dir)
                 config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
                 config["polygon_dir"] = args.polygon_dir
             else:
