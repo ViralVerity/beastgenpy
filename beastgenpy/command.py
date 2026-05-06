@@ -10,6 +10,7 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 from io import StringIO
 from collections import defaultdict
+import datetime as dt
 
 import glm_funcs as glm_funcs
 import core_funcs as core_funcs
@@ -161,7 +162,7 @@ def main(sysargs = sys.argv[1:]):
     if args.file_stem:
         config["file_stem"] = args.file_stem
     else:
-        config["file_stem"] = args.template.split("/")[-1].split(".")[0]
+        config["file_stem"] = "beast"
     
     ##general options
     config["chain_length"] = args.chain_length
