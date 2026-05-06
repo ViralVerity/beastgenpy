@@ -39,7 +39,7 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="taxa_components/taxa.operators.xml" args="config=config"/>
 %endif
 
-%if config["empirical"]: #need to work out
+%if config["empirical_tree"]:
 <%include file="tree_components/empirical.operators.xml" args="config=config"/>
 %endif
 
@@ -59,7 +59,6 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="clock_models/${config['clock_model']}.priors.xml" args="config=config"/>
 <%include file="population_models/${config['population_model']}.priors.xml" args="config=config"/>
 %endif
-#tree priors?
 
 %if config["phylogeography"]:
 <%include file="phylogeog_components/${config['phylogeography']}.priors.xml" args="config=config"/>
@@ -68,8 +67,7 @@ Author: Verity Hill, University of Glasgow -->
             </prior>
             <likelihood id="likelihood">
 
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>
+%for name in config["sequence_info"].keys():
 				<treeLikelihood idref="${name}.treeLikelihood"/>
 %if config["phylogeography"]:
 <%include file="phylogeog_components/${config['phylogeography']}.likelihood.xml" args="config=config, name=name"/>
@@ -106,17 +104,16 @@ Author: Verity Hill, University of Glasgow -->
 <%include file="population_models/${config['population_model']}.log.xml" args="config=config"/>
 %endif
 
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>
 %if not config["fixed_tree"]:
+%for name in config["sequence_info"].keys():
 			<treeLikelihood idref="${name}.treeLikelihood"/>
-%endif		
 %endfor
+%endif		
+
 		</log>
 
-%for taxon_info in config["fasta"]:
-<% name = taxon_info["name"]%>
-		<logTree id="${name}.treeFileLog" logEvery="${config['log_every']}" nexusFormat="true" fileName="${name}.trees" sortTranslationTable="true">
+%for name in config["sequence_info"].keys():
+		<logTree id="${name}.treeFileLog" logEvery="${config['log_every']}" nexusFormat="true" fileName="${config['file_stem']}.${name}.trees" sortTranslationTable="true">
             <treeModel idref="${name}.treeModel"/>
 			<joint idref="joint"/> 
 %if config["phylogeography"]:

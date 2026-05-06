@@ -28,7 +28,8 @@ def main(sysargs = sys.argv[1:]):
     tax_group.add_argument("--codon-partitioning", "-cp", dest="codon_partitioning", help="comma separated list of 1s and 0s for which alignments have codon partitioning")
 
     tree_group = parser.add_argument_group("Tree options")
-    tree_group.add_argument("--fixed-tree", action="store_true", dest="fixed_tree", help="Perform analysis on fixed tree or empirical trees")
+    tree_group.add_argument("--empirical-tree", action="store_true", dest="empirical", help="perform analysis on empirical trees")
+    tree_group.add_argument("--fixed-tree", action="store_true", dest="fixed_tree", help="Perform analysis on fixed tree")
     tree_group.add_argument("--starting-tree", action="store_true", dest="starting_tree", help="flag for adding a starting tree")
     tree_group.add_argument("--tree-file", dest="fixed_tree_file", help="File with single fixed/empirical/starting tree") 
     tree_group.add_argument("--tree-dir", dest='fixed_tree_dir', help="Directory containing multiple fixed/empirical/starting trees in newick format")
@@ -83,7 +84,7 @@ def main(sysargs = sys.argv[1:]):
 
     config = {} 
 
-    config = core_funcs.add_bools_to_config(config, args.fixed_tree, args.starting_tree, args.glm, args.epoch, args.verbose)
+    config = core_funcs.add_bools_to_config(config, args.fixed_tree, args.empirical, args.starting_tree, args.glm, args.epoch, args.verbose)
 
     #pull information about sequences
     if args.alignment:
@@ -98,7 +99,6 @@ def main(sysargs = sys.argv[1:]):
 
     config["seq_to_tree"] = {}
     for name, info in config["sequence_info"].items():
-        print(info.keys())
         for seq_name in info["taxon_list"]:
             config["seq_to_tree"][seq_name] = name
 

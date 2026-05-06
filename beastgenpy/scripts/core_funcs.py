@@ -6,9 +6,14 @@ from collections import defaultdict
 import sys
 import error_checks as error_checks
 
-def add_bools_to_config(config, fixed_tree, starting_tree, glm, epoch, verbose):
+def add_bools_to_config(config, fixed_tree, empirical_tree, starting_tree, glm, epoch, verbose):
 
-    config["fixed_tree"] = fixed_tree
+    if empirical_tree:
+        config["fixed_tree"] = True
+    else:
+        config["fixed_tree"] = fixed_tree
+    
+    config["empirical_tree"] = empirical_tree
     config["starting_tree"] = starting_tree
     config["glm"] = glm
     config["epoch"] = epoch
