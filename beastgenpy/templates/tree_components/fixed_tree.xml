@@ -1,5 +1,5 @@
 <!-- Insert fixed tree blocks -->  
-for name, info in config["sequence_info"]:
+%for name, info in config["sequence_info"].items():
 	<empiricalTreeDistributionModel id="${name}.treeModel" fileName="${info['tree_file']}">
 		<taxa idref="${name}.taxa"/>
 	</empiricalTreeDistributionModel> 

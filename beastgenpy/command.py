@@ -15,6 +15,7 @@ import datetime as dt
 import glm_funcs as glm_funcs
 import core_funcs as core_funcs
 import trait_analysis_funcs as trait_funcs
+import tree_funcs as tree_funcs
 import error_checks as error_checks
 
 cwd = os.getcwd()
@@ -91,7 +92,7 @@ def main(sysargs = sys.argv[1:]):
     if args.alignment:
         config["sequence_info"] = core_funcs.parse_fasta(args.alignment, args.codon_partitioning)
     if args.fixed_tree:
-        config = core_funcs.parse_fixed_trees(args.tree_file, args.tree_dir)
+        config = tree_funcs.parse_fixed_trees(config, args.fixed_tree_file, args.fixed_tree_dir)
     if not config["sequence_info"]:
         sys.stderr.write("Need to provide either an alignment or fixed trees file/directory\n")
         sys.exit(-1)
@@ -104,7 +105,7 @@ def main(sysargs = sys.argv[1:]):
             config["seq_to_tree"][seq_name] = name
 
     if args.starting_tree:
-        config["sequence_info"] = core_funcs.parse_starting_trees(args.tree_file, args.tree_dir)
+        config["sequence_info"] = tree_funcs.parse_starting_trees(config, args.fixed_tree_file, args.fixed_tree_dir)
 
     if args.phylogeography:
         config = error_checks.check_phylogeog_value(config, args.phylogeography)
@@ -130,7 +131,7 @@ def main(sysargs = sys.argv[1:]):
             config["traits"], config["trait_dict"], config["overall_trait"] = trait_funcs.continuous_phylogeography_processing(args.trait_file)
             error_checks.check_seqs_present(config)
             if args.polygon_dir:
-                error_checks.check_file(args.polygon_dir)
+                error_checks.check_file_exists(args.polygon_dir)
                 config["uncertain_polygons"] = trait_funcs.sort_uncertain_polygons(args.polygon_dir)
                 config["polygon_dir"] = args.polygon_dir
             else:
@@ -149,15 +150,15 @@ def main(sysargs = sys.argv[1:]):
     else:
         config["transition_times"] = []
 
-    
-    config["population_model"] = args.population_model
-    if config["population_model"] == "skygrid":
-        config = error_checks.check_gp_cutoff(config, args.sg_cutoff, args.sg_gridpoints)
-        if not config["gridpoints"]:
-            config["gridpoints"] = int(args.sg_gridpoints)
+    if not config["fixed_tree"]:
+        config["population_model"] = args.population_model
+        if config["population_model"] == "skygrid":
+            config = error_checks.check_gp_cutoff(config, args.sg_cutoff, args.sg_gridpoints)
+            if not config["gridpoints"]:
+                config["gridpoints"] = int(args.sg_gridpoints)
 
-    config["clock_model"] = args.clock_model
-    config["subs_model"] = args.subs_model
+        config["clock_model"] = args.clock_model
+        config["subs_model"] = args.subs_model
 
     if args.file_stem:
         config["file_stem"] = args.file_stem

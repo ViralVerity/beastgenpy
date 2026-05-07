@@ -43,7 +43,7 @@
 		<multivariateDiffusionModel idref="${config["overall_trait"]}.diffusionModel"/>
 		<treeModel idref="${name}.treeModel"/>
 		<traitParameter>
-			<parameter id="${name}.leaf.${config["overall_trait"]}}"/>
+			<parameter id="${name}.leaf.${config["overall_trait"]}"/>
 		</traitParameter>
 		<conjugateRootPrior>
 			<meanParameter>
@@ -74,7 +74,7 @@
 <%name=config["seq_to_tree"][taxon]%>\
 	<leafTraitParameter id="${taxon}.trait" taxon="${taxon}">
 		<treeModel idref="${name}.treeModel"/>
-		<parameter idref="${name}.leaf.${config["overall_trait"]}}"/>
+		<parameter idref="${name}.leaf.${config["overall_trait"]}"/>
 	</leafTraitParameter>
 	<flatGeoSpatialPrior id="${taxon}.polygons" taxon="${taxon}" kmlFileName="${config['polygon_dir']}/${taxon}.kml" inside="true" union="true" cache="true">
 		<data>

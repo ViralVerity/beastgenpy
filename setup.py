@@ -14,6 +14,7 @@ setup(name='beastgenpy',
             "beastgenpy/scripts/glm_funcs.py",
             "beastgenpy/scripts/taxon_set_funcs.py",
             "beastgenpy/scripts/trait_analysis_funcs.py",
+            "beastgenpy/scripts/tree_funcs.py",
             "beastgenpy/scripts/error_checks.py"
             ],
       package_dir={"":"./"},

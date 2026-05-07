@@ -14,7 +14,7 @@ def check_file_exists(file):
 def check_dates_in_names(config):
 
     for analysis, info in config["sequence_info"].items():
-        for name in info["taxon_list"].items():
+        for name in info["taxon_list"]:
             if not "|" in name:
                 sys.stderr(f"sequence name format needs to be '|[date]'. {name} in fasta/tree {name} is incorrect \n")
                 sys.exit(-1)
@@ -51,7 +51,7 @@ def check_names_models(config, thisdir):
 
     for direc in ("population_models", "substitution_models", "clock_models", "phylogeog_components"):
         for file in os.listdir(os.path.join(path_to_templates, direc)):
-            if file.endswith(".xml")
+            if file.endswith(".xml"):
                 model = file.split(".")[0]
                 allowed_models.add(model)
 
@@ -79,10 +79,10 @@ def check_gp_cutoff(config, cutoff, gridpoints):
 
 def check_seqs_present(config):
 
-    for fasta_info in config["fasta"]:
-        for seq in fasta_info["sequences"]:
-            if seq.id not in config["trait_dict"]:
-                sys.stderr.write(f"{seq.id} not in trait file\n")
+    for name, info in config["sequence_info"].items():
+        for seq in info["taxon_list"]:
+            if seq not in config["trait_dict"]:
+                sys.stderr.write(f"{seq} not in trait file\n")
                 sys.exit(-1)
 
 def check_phylogeog_value(config, phylogeography):
@@ -113,3 +113,8 @@ def check_headers_trait(config):
     if "coordinates" not in headers: 
         sys.stderr.write("coordinates missing from headers in continuous trait file\n")
         sys.exit(-1)
+
+def check_tree_file(tree_file, schema=False):
+
+
+    return
