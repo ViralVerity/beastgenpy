@@ -23,6 +23,32 @@
 
 	<!-- END Multivariate diffusion model                                        -->
 %for name in config["sequence_info"].keys():
+
+%if config["fixed_tree"]:
+	<treeLengthStatistic id="${name}.treeLength">
+		<treeModel idref="${name}.treeModel"/>
+	</treeLengthStatistic>
+%endif
+
+	<productStatistic id="${name}.treeLengthPrecision1">
+        <treeLengthStatistic idref="${name}.treeLength"/>
+        <subStatistic id="${name}.precision1" dimension="0">
+            <parameter idref="${config["overall_trait"]}.precision.col1"/>
+        </subStatistic>
+    </productStatistic>
+	 <productStatistic id="${name}.treeLengthPrecision2">
+        <treeLengthStatistic idref="${name}.treeLength"/>
+        <subStatistic id="${name}.precision2" dimension="1">
+            <parameter idref="${config["overall_trait"]}.precision.col2"/>
+        </subStatistic>
+    </productStatistic>
+    <productStatistic id="${name}.treeLengthPrecision3">
+        <treeLengthStatistic idref="${name}.treeLength"/>
+        <subStatistic id="${name}.precision3" dimension="1">
+            <parameter idref="${config["overall_trait"]}.precision.col1"/>
+        </subStatistic>
+    </productStatistic>
+
 <!-- START Multivariate diffusion model                                     -->
 	<discretizedBranchRates id="${name}.${config["overall_trait"]}.diffusionRates">
 		<treeModel idref="${name}.treeModel"/>

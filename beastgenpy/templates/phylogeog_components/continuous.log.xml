@@ -5,4 +5,8 @@
 %for name in config["sequence_info"].keys():
             <continuousDiffusionStatistic idref="${name}.${config["overall_trait"]}.diffusionRate"/>
 			<multivariateTraitLikelihood idref="${name}.${config["overall_trait"]}.traitLikelihood"/>
+
+			<productStatistic idref="${name}.treeLengthPrecision1"/>
+			<productStatistic idref="${name}.treeLengthPrecision2"/>
+			<productStatistic idref="${name}.treeLengthPrecision3"/>
 %endfor
