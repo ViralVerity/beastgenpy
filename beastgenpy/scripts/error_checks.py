@@ -16,7 +16,7 @@ def check_dates_in_names(config):
     for analysis, info in config["sequence_info"].items():
         for name in info["taxon_list"]:
             if not "|" in name:
-                sys.stderr(f"sequence name format needs to be '|[date]'. {name} in fasta/tree {name} is incorrect \n")
+                sys.stderr.write(f"sequence name format needs to be '|[date]'. {name} in fasta/tree {analysis} is incorrect \n")
                 sys.exit(-1)
             else:
                 date_string = name.split("|")[-1]
@@ -24,22 +24,22 @@ def check_dates_in_names(config):
                     try:
                         date = dt.datetime.strptime(date_string, "%Y-%m-%d").date()
                     except:
-                        sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                        sys.stderr.write(f"date in {name} in analysis {analysis} not in recognised format")
                         sys.exit(-1)
                 elif len(date_string.split("-")) == 2:
                     try:
                         date = dt.datetime.strptime(date_string, "%Y-%m").date()
                     except:
-                        sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                        sys.stderr.write(f"date in {name} in analysis {analysis} not in recognised format")
                         sys.exit(-1)
                 elif len(date_string.split("-")) == 1:
                     try:
                         date = dt.datetime.strptime(date_string, "%Y").date()
                     except:
-                        sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                        sys.stderr.write(f"date in {name} in analysis {analysis} not in recognised format")
                         sys.exit(-1)
                 else:
-                    sys.stderr(f"date in {name} in analysis {analysis} not in recognised format")
+                    sys.stderr.write(f"date in {name} in analysis {analysis} not in recognised format")
                     sys.exit(-1)
     return
 

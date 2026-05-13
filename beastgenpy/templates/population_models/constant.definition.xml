@@ -2,7 +2,7 @@
     <!-- Generate a coalescent likelihood                                        -->
 	<coalescentLikelihood id="${name}.coalescent">
 		<model>
-			<constantSize idref="constant"/>
+			<constantSize idref="${name}.constant"/>
 		</model>
 		<intervals>
 			<treeIntervals>
