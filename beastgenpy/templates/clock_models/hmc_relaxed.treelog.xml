@@ -1,0 +1,2 @@
+<%page args="config, name"/>
+                <arbitraryBranchRates idref="${name}.branchRates"/>

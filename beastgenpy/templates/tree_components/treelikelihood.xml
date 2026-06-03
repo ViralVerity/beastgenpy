@@ -1,12 +1,16 @@
 %for name in config["sequence_info"].keys():
-	<treeLikelihood id="${name}.treeLikelihood" useAmbiguities="false">
-		<patterns idref="${name}.patterns"/>
+	<treeDataLikelihood id="${name}.treeLikelihood" useAmbiguities="false" usePreOrder="true">
+		<partition>
+			<patterns idref="${name}.patterns"/>
+			<siteModel idref="siteModel"/>
+		</partition>
 		<treeModel idref="${name}.treeModel"/>
-		<siteModel idref="siteModel"/>
 %if config["clock_model"] == "relaxed":
 		<discretizedBranchRates idref="${name}.branchRates"/>
+%elif config["clock_model"] == "hmc_relaxed":
+		<branchRates idref="${name}.branchRates"/>
 %else:
 		<strictClockBranchRates idref="${name}.branchRates"/>
 %endif
-	</treeLikelihood>
+	</treeDataLikelihood>
 %endfor

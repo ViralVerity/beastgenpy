@@ -1,0 +1,6 @@
+%for name, info in config["sequence_info"].items():
+                <ctmcScalePrior idref="${name}.locationPrior"/>
+				<distributionLikelihood idref="${name}.ratesPrior"/>
+				<distributionLikelihood idref="${name}.scalePrior"/>
+                <branchRates idref="${name}.branchRates"/>
+%endfor

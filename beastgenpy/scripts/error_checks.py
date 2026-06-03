@@ -65,7 +65,7 @@ def check_names_models(config, thisdir):
 def check_gp_cutoff(config, cutoff, gridpoints):
 
     if not cutoff:
-        sys.stderr.write(f"no cutoff specified for skygrid model\n")
+        sys.stderr.write(f"no cutoff specified for {config['population_model']} model\n")
         sys.exit(-1)
     else:
         config["cutoff"] = int(cutoff)

@@ -1,0 +1,72 @@
+%for name, info in config["sequence_info"].items():
+    <skyGlideLikelihood id="${name}.skyGlideLikelihood">
+        <populationSizes>
+			<parameter id="${name}.skygrid.logPopSize" dimension="${config['gridpoints']}" value="1.0"/>
+		</populationSizes>
+		<numGridPoints>
+			<parameter id="${name}.skygrid.numGridPoints" value="${config['gridpoints']-1}.0"/>
+		</numGridPoints>
+		<cutOff>
+			<parameter id="${name}.skygrid.cutOff" value="${config['cutoff']}"/>
+		</cutOff>
+		<populationTree>
+			<treeModel idref="${name}.treeModel"/>
+		</populationTree>
+	</skyGlideLikelihood>
+	
+	<skyGlideGradient id="${name}.skyGlideGradient.logPopSize">
+		<skyGlideLikelihood idref="${name}.skyGlideLikelihood"/>
+		<parameter idref="${name}.skygrid.logPopSize"/>		
+	</skyGlideGradient>
+	
+	<randomField id="${name}.gmrf">
+		<distribution>
+			<gaussianMarkovRandomField dim="${config['gridpoints']}" matchPseudoDeterminant="false"> 
+ 				<precision>
+					<parameter id="${name}.skygrid.precision" value="0.1" lower="0.0"/>
+				</precision>
+				<mean>
+					<parameter id="${name}.mean" value="0.0"/>
+				</mean>
+			</gaussianMarkovRandomField>
+		</distribution>
+		<data>
+			<parameter idref="${name}.skygrid.logPopSize"/>
+		</data>
+	</randomField>
+	
+	<randomFieldGradient id="${name}.gradientPopSize">
+		<randomField idref="${name}.gmrf"/>
+		<parameter idref="${name}.skygrid.logPopSize"/>
+	</randomFieldGradient>
+	
+	<gammaPrior id="${name}.skygrid.precision.prior" shape="0.001" scale="1000" offset="0.0">
+		<parameter idref="${name}.skygrid.precision"/>
+	</gammaPrior>
+	
+	<randomFieldGradient id="${name}.gradientPrecision">
+		<randomField idref="${name}.gmrf"/>
+		<parameter idref="${name}.skygrid.precision"/>
+	</randomFieldGradient>
+	
+	<compoundParameter id="${name}.skygrid.parameters">
+		<parameter idref="${name}.skygrid.precision"/>
+		<parameter idref="${name}.skygrid.logPopSize"/>
+	</compoundParameter>
+	
+	<jointGradient id="${name}.joint.skygrid.precision">
+		<randomFieldGradient idref="${name}.gradientPrecision"/>
+		<gradient>
+			<gammaPrior idref="${name}.skygrid.precision.prior"/>
+			<parameter idref="${name}.skygrid.precision"/>
+		</gradient>
+	</jointGradient>
+
+	<compoundGradient id="${name}.full.skygrid.gradient">
+		<jointGradient idref="${name}.joint.skygrid.precision"/>
+		<jointGradient id="${name}.gradient.Pop">
+			<randomFieldGradient idref="${name}.gradientPopSize"/>
+			<skyGlideGradient idref="${name}.skyGlideGradient.logPopSize"/>
+		</jointGradient>
+	</compoundGradient>
+%endfor

@@ -1,0 +1,5 @@
+%for name, info in config["sequence_info"].items():
+                <skyGlideLikelihood idref="${name}.skyGlideLikelihood"/>
+				<gammaPrior idref="${name}.skygrid.precision.prior"/>
+				<randomField idref="${name}.gmrf"/>
+%endfor

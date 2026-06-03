@@ -152,7 +152,7 @@ def main(sysargs = sys.argv[1:]):
 
     if not config["fixed_tree"]:
         config["population_model"] = args.population_model
-        if config["population_model"] == "skygrid":
+        if config["population_model"] == "skygrid" or config["population_model"] == "skyglide":
             config = error_checks.check_gp_cutoff(config, args.sg_cutoff, args.sg_gridpoints)
             if not config["gridpoints"]:
                 config["gridpoints"] = int(args.sg_gridpoints)

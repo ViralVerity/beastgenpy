@@ -1,0 +1,67 @@
+<!-- The Hamiltonian Monte Carlo relaxed clock                               -->
+%for name, info in config["sequence_info"].items():
+    <arbitraryBranchRates id="${name}.branchRates" centerAtOne="false">
+		<treeModel idref="${name}.treeModel"/>
+		<rates>
+			<parameter id="${name}.branchRatesHMC.rates" value="0.01" lower="0.0"/>
+		</rates>
+		<location>
+			<parameter id="${name}.branchRatesHMC.rate" value="0.01" lower="0.0"/>
+		</location>
+		<scale>
+			<parameter id="${name}.branchRatesHMC.scale" value="1.0" lower="0.0"/>
+		</scale>
+	</arbitraryBranchRates>
+	<distributionLikelihood id="${name}.ratesPrior">
+		<data>
+			<parameter idref="${name}.branchRatesHMC.rates"/>
+		</data>
+		<distribution>
+			<logNormalDistributionModel meanInRealSpace="true">
+				<mean>
+					<parameter value="1.0" lower="0.0"/>
+				</mean>
+				<stdev>
+					<parameter value="0.1" lower="0.0"/>
+				</stdev>
+			</logNormalDistributionModel>
+		</distribution>
+	</distributionLikelihood>
+	
+	<rateStatistic id="${name}.meanRate" name="${name}.meanRate" mode="mean" internal="true" external="true">
+		<treeModel idref="${name}.treeModel"/>
+		<arbitraryBranchRates idref="${name}.branchRates"/>
+	</rateStatistic>
+	
+	<rateStatistic id="${name}.coefficientOfVariation" name="${name}.coefficientOfVariation" mode="coefficientOfVariation" internal="true" external="true">
+		<treeModel idref="${name}.treeModel"/>
+		<arbitraryBranchRates idref="${name}.branchRates"/>
+	</rateStatistic>
+	
+	<rateCovarianceStatistic id="${name}.covariance" name="covariance">
+		<treeModel idref="${name}.treeModel"/>
+		<arbitraryBranchRates idref="${name}.branchRates"/>
+	</rateCovarianceStatistic>
+	<distributionLikelihood id="${name}.scalePrior">
+		<data>
+			<parameter idref="${name}.branchRatesHMC.scale"/>
+		</data>
+		<distribution>
+			<exponentialDistributionModel>
+				<mean>
+					<parameter value="1.0" lower="0.0"/>
+				</mean>
+			</exponentialDistributionModel>
+		</distribution>
+	</distributionLikelihood>
+	<compoundParameter id="${name}.locationScale">
+		<parameter idref="${name}.branchRatesHMC.rate"/>
+		<parameter idref="${name}.branchRatesHMC.scale"/>
+	</compoundParameter>
+	<ctmcScalePrior id="${name}.locationPrior">
+		<ctmcScale>
+			<parameter idref="${name}.branchRatesHMC.rate"/>
+		</ctmcScale>
+		<treeModel idref="${name}.treeModel"/>
+	</ctmcScalePrior>
+%endfor

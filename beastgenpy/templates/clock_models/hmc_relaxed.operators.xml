@@ -1,0 +1,31 @@
+%for name, info in config["sequence_info"].items():
+        <scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="${name}.branchRatesHMC.rate"/>
+		</scaleOperator>
+		<hamiltonianMonteCarloOperator weight="1" nSteps="4" stepSize="0.01" autoOptimize="true" mode="vanilla" gradientCheckCount="0" preconditioning="diagonal" preconditioningUpdateFrequency="10">
+			<jointGradient>
+				<hessian>
+					<distributionLikelihood idref="${name}.ratesPrior"/>
+					<parameter idref="${name}.branchRatesHMC.rates"/>
+				</hessian>
+				<branchRateGradient traitName="${name}.Sequence">
+					<treeDataLikelihood idref="${name}.treeLikelihood"/>
+				</branchRateGradient>
+			</jointGradient>
+			<parameter idref="${name}.branchRatesHMC.rates"/>
+			<signTransform>
+				<parameter idref="${name}.branchRatesHMC.rates"/>
+			</signTransform>
+		</hamiltonianMonteCarloOperator>
+		<scaleOperator scaleFactor="0.75" weight="3">
+			<parameter idref="${name}.branchRatesHMC.scale"/>
+		</scaleOperator>
+		<upDownOperator scaleFactor="0.75" weight="3">
+			<up>
+				<parameter idref="${name}.treeModel.allInternalNodeHeights"/>
+			</up>
+			<down>
+				<parameter idref="${name}.branchRatesHMC.rate"/>
+			</down>
+		</upDownOperator>   
+%endfor

@@ -1,0 +1,8 @@
+%for name, info in config["sequence_info"].items():
+            <parameter idref="${name}.branchRatesHMC.rate"/>
+			<parameter idref="${name}.branchRatesHMC.scale"/>
+			<rateStatistic idref="${name}.meanRate"/>
+			<rateStatistic idref="${name}.coefficientOfVariation"/>
+			<rateCovarianceStatistic idref="${name}.covariance"/>
+            <branchRates idref="${name}.branchRates"/>
+%endfor
