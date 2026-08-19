@@ -91,7 +91,7 @@ def main(sysargs = sys.argv[1:]):
     #pull information about sequences
     if args.alignment:
         config["sequence_info"] = core_funcs.parse_fasta(args.alignment, args.codon_partitioning)
-    if args.fixed_tree:
+    if args.fixed_tree or args.empirical:
         config = tree_funcs.parse_fixed_trees(config, args.fixed_tree_file, args.fixed_tree_dir)
     if not config["sequence_info"]:
         sys.stderr.write("Need to provide either an alignment or fixed trees file/directory\n")

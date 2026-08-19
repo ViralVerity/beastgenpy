@@ -1,4 +1,3 @@
-
 <%import core_funcs%>
     <!-- The list of taxa to be analysed (can also include dates/ages).          -->
 %for name, info in config["sequence_info"].items():
