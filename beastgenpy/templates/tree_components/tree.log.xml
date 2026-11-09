@@ -2,4 +2,8 @@
             <parameter idref="${name}.treeModel.rootHeight"/>
 			<tmrcaStatistic idref="${name}.age(root)"/>
 			<treeLengthStatistic idref="${name}.treeLength"/>
+%if config["phylogeography"] == "continuous":
+			<trait name="geog_rate" tag="rate">
+                <discretizedBranchRates idref="${name}.coordinates.diffusionRates"/>
+			</trait>
 %endfor
